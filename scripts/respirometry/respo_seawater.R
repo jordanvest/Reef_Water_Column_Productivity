@@ -1,7 +1,8 @@
 ###### Respo Code for Seawater Samples Light and Dark Runs ####### 
 ### Created by: Nyssa Silbiger
-#### Adapted for seawater on: 2025-06-25 by Jordan Vest & Maya Powell
-## Last updated on: 2025-06-25
+#### Adapted for seawater on: 2026-06-25 by Jordan Vest & Maya Powell for MPW Project
+##### Adapted for Reef Water Column Productivity Project 2026-08-05 by Jordan Vest
+## Last updated on: 2026-08-05
 
 ############## Introduction to code/script ####################
 ## this script will help us process the raw data gathered during respirometry runs. 
@@ -46,8 +47,11 @@ library(dplyr)
 
 #set the path to all of the raw oxygen datasheets
 ## these are saved onto the computer in whatever file path/naming scheme you saved things to 
-path.p<-here("data","respofiles","RawO2", "MPW", "MPW_RUN3") #the location of all your respirometry files
+path.p<-here("data","respirometry","kewalo", "rawo2", "K_RUN2") #the location of all your respirometry files
 #you can change to individual run folders if needed
+#use this to check file path is good before running script 
+#print(path.p)
+#print(filenames_final)
 
 # bring in all of the individual files
 filenames_final<-basename(list.files(path = path.p, pattern = "csv$", recursive = TRUE)) #list all csv file names in the folder and subfolders
@@ -56,15 +60,16 @@ filenames_final<-basename(list.files(path = path.p, pattern = "csv$", recursive 
 file.names.full<-list.files(path = path.p, pattern = "csv$", recursive = TRUE) 
 
 #empty chamber volume
-ch.vol <- 500 #mL #of small chambers 
+ch.vol <- 350 #mL #of small chambers 
+###J to update if chambers change
 
 ######### Load and tidy files ###############
 ############################################
 #Load your respiration data file, with all the times, water volumes(mL), #not doing dry weight just SA
 #RespoMeta <- read_csv(here("Data","RespoFiles","Respo_Metadata_SGDDilutions_Cabral_Varari.csv"))
-BioData <- read_csv(here("data","respofiles", "measurements_mpw.csv")) #ch vol, sa, chla, etc things to normalize to
+BioData <- read_csv(here("data","respirometry", "kewalo", "measurements_kewalo.csv")) #ch vol, sa, chla, etc things to normalize to
 
-RespoMeta <- read_csv(here("data","respofiles","mpw_respo_meta.csv")) #metadata, ID, site, etc
+RespoMeta <- read_csv(here("data","respirometry","kewalo", "kewalo_respo_meta.csv")) #metadata, ID, site, etc
 #View(BioData)
 #View(RespoMeta)
 
@@ -90,8 +95,8 @@ Sample_Info <- Sample_Info %>%
   mutate(date = mdy(date))
 
 #View(Sample_Info)
-write_csv(Sample_Info, here("data","respofiles","sample_info_mpw.csv"))
-Sample_Info <- read_csv(here("data","respofiles","sample_info_mpw.csv"))
+write_csv(Sample_Info, here("data","respirometry","kewalo","sample_info_kewalo.csv"))
+Sample_Info <- read_csv(here("data","respirometry","kewalo","sample_info_kewalo.csv"))
 
 #generate a dataframe with specific column names
 # data is in umol.L.sec
@@ -193,7 +198,7 @@ for(i in 1:length(filenames_final)) {
     mutate(light = paste(light_dark))
   
   for(j in 1:length(df$light)){
-    pdf(paste0(here("output","MPW"),"/",rename,"_",j,".pdf" ))
+    pdf(paste0(here("output","kewalo", "respirometry"),"/",rename,"_",j,".pdf" ))
     plot(df$regs[[j]])
     dev.off() 
   }
@@ -223,16 +228,16 @@ for(i in 1:length(filenames_final)) {
 
 #export raw data and read back in as a failsafe 
 #this allows me to not have to run the for loop again !!!!!
-write_csv(RespoR, here("data","respofiles","mpw_RespoR.csv"))  
+write_csv(RespoR, here("data","respirometry","kewalo","kewalo_RespoR.csv"))  
 
 ##### 
 
 ######### Calculate Respiration rate ###############
 ############################################
 
-RespoR <- read_csv(here("data","respofiles","mpw_RespoR.csv"))
-Sample_Info <- read_csv(here("data","respofiles","sample_info_mpw.csv"))
-ch.vol <- 500 #mL #of small chambers 
+RespoR <- read_csv(here("data","respirometry","kewalo","kewalo_RespoR.csv"))
+Sample_Info <- read_csv(here("data","respirometry","kewalo","sample_info_kewalo.csv"))
+ch.vol <- 350 #mL #of small chambers 
 
 RespoR2 <- RespoR %>%
   #drop_na(FileID_csv) %>% # drop NAs
@@ -247,8 +252,8 @@ RespoR2 <- RespoR %>%
               Temp.C) #keep only what we need
 ######@JORDAN DO THIS LATER!!!!##### CHLA CONVERSION ABOVE!!!!
 
-write_csv(RespoR2 , here("data","respofiles","RespoR2_AllRates.csv"))  
-RespoR2 <- read_csv(here("data","respofiles","RespoR2_AllRates.csv"))
+write_csv(RespoR2 , here("data","respirometry","kewalo","RespoR2_AllRates.csv"))  
+RespoR2 <- read_csv(here("data","respirometry","kewalo","RespoR2_AllRates.csv"))
 
 ###Generate Respo rate dataframe for use in future analysis
 RespoR_PR <- RespoR2 %>%
@@ -259,8 +264,8 @@ RespoR_PR <- RespoR2 %>%
   mutate(GrossPhoto = Respiration + NetPhoto) %>% # calculate gross photosynthesis
   pivot_longer(cols = Respiration:GrossPhoto, names_to = "PR", values_to = "Values") #values still in umol.hr
 
-write_csv(RespoR_PR,here("data","respofiles","PnR_rates.csv")) # export all the uptake rates
-RespoR_PR <- read_csv(here("data","respofiles","PnR_rates.csv"))
+write_csv(RespoR_PR,here("data","respirometry","kewalo","PnR_rates.csv")) # export all the uptake rates
+RespoR_PR <- read_csv(here("data","respirometry","kewalo","PnR_rates.csv"))
 
 #dev.off() # may need if plot doesn't run?
 PR_plot <- RespoR_PR %>% 
@@ -273,6 +278,6 @@ PR_plot <- RespoR_PR %>%
   theme(strip.background = element_rect(fill = "white"),
         strip.text = element_text(face = "bold"))
 
-ggsave(here("output", "PR_boxplots_mpw.pdf"),
+ggsave(here("output", "kewalo","respirometry","PR_boxplots_kewalo.pdf"),
        device = "pdf", height = 8, width = 8, PR_plot)
 
