@@ -47,7 +47,7 @@ library(dplyr)
 
 #set the path to all of the raw oxygen datasheets
 ## these are saved onto the computer in whatever file path/naming scheme you saved things to 
-path.p<-here("data","respirometry","kewalo", "rawo2", "K_RUN2") #the location of all your respirometry files
+path.p<-here("data","respirometry","kewalo", "rawo2", "K_RUN4") #the location of all your respirometry files
 #you can change to individual run folders if needed
 #use this to check file path is good before running script 
 #print(path.p)
@@ -100,7 +100,6 @@ Sample_Info <- read_csv(here("data","respirometry","kewalo","sample_info_kewalo.
 Sample_Info <- Sample_Info %>% filter(run_block == basename(path.p))   # J added this line 9/15/26
 #generate a dataframe with specific column names
 # data is in umol.L.sec
-
 RespoR <- tibble(.rows =length(filenames_final)*2, #*2 for light and dark runs
                  sample_ID = NA,
                  Intercept = NA,
