@@ -133,7 +133,7 @@ for(i in 1:length(filenames_final)) {
         arrange(Time) %>%
         mutate(t_sec = as.numeric(difftime(Time, first(Time), units = "secs"))) %>% #keep everything in seconds
         mutate(light_dark = light_dark) %>%
-        filter(t_sec > 120) %>%                         # drop first 2 min (120 s)
+        filter(t_sec > 1200) %>%                         # drop first 2- min (1200 s)
         filter(row_number() %% 10 == 0)                  # keep every 10th row - @Jordan not doing this bc we did every 2min of data here
       # now t_sec increments by ~20 s for your kept rows
       #   filter(Time >= start_time & Time <= stop_time) %>%
