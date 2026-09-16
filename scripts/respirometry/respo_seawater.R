@@ -132,7 +132,7 @@ for(i in 1:length(filenames_final)) {
         arrange(Time) %>%
         mutate(t_sec = as.numeric(difftime(Time, first(Time), units = "secs"))) %>% #keep everything in seconds
         mutate(light_dark = light_dark) %>%
-        filter(t_sec > 1200) %>%                         # drop first 2- min (1200 s)
+        filter(t_sec > 1800) %>%                         # drop first 30 min (1800 s)
         filter(row_number() %% 10 == 0)                  # keep every 10th row - @Jordan not doing this bc we did every 2min of data here
       # now t_sec increments by ~20 s for your kept rows
       #   filter(Time >= start_time & Time <= stop_time) %>%
@@ -241,14 +241,14 @@ ch.vol <- 350 #mL #of small chambers
 RespoR2 <- RespoR %>%
   #drop_na(FileID_csv) %>% # drop NAs
   left_join(Sample_Info) %>% # Join the raw respo calculations with the metadata
-  mutate(Ch.Volume.mL = ch.vol) %>% # measured volume of chambers with coral + stand + stirbar displacement
+  mutate(Ch.Volume.mL = volume_mL) %>% # was =ch.vol #measured volume of chambers with coral + stand + stirbar displacement
   mutate(Ch.Volume.L = Ch.Volume.mL * 0.001) %>% # mL to L conversion
   mutate(umol.sec = umol.L.sec*Ch.Volume.L) %>% #Account for chamber volume to convert from umol L-1 s-1 to umol s-1. This standardizes across water volumes (different because of coral size) and removes per Liter
   mutate_if(sapply(., is.character), as.factor) %>% #convert character columns to factors
   mutate(umol.hr = umol.sec*3600) %>% #convert to units per hour
   #mutate(umol.chla.hr = umol.hr/chla) %>% #convert to final units using chla concentrations 
-  dplyr::select(date, sample_ID, site_ID, light_dark, run_block, run_block, umol.hr, chamber_channel, 
-              Temp.C) #keep only what we need
+  dplyr::select(date, sample_ID, site_ID, light_dark, run_block, umol.hr, chamber_channel, chamber_type,
+              Temp.C) #J added chamber type 9/15/26 #keep only what we need
 ######@JORDAN DO THIS LATER!!!!##### CHLA CONVERSION ABOVE!!!!
 
 write_csv(RespoR2 , here("data","respirometry","kewalo","RespoR2_AllRates.csv"))  
@@ -280,3 +280,17 @@ PR_plot <- RespoR_PR %>%
 ggsave(here("output", "kewalo","respirometry","PR_boxplots_kewalo.pdf"),
        device = "pdf", height = 8, width = 8, PR_plot)
 
+#####Jordan addition
+RespoR_PR %>% #bottle size difference
+  filter(run_block %in% c("K_RUN3", "K_RUN4")) %>%   # only runs where chamber type varies
+  ggplot(aes(x = site_ID, y = Values, fill = chamber_type)) +
+  geom_boxplot(outlier.shape = NA, position = position_dodge(width = 0.8)) +
+  geom_point(aes(color = chamber_type), position = position_jitterdodge(jitter.width = 0.1, dodge.width = 0.8), alpha = 0.7) +
+  facet_wrap(run_block ~ PR, scales = "free") +
+  theme_bw() +
+  labs(x = "Site", y = "umol/hr", fill = "Chamber Type", color = "Chamber Type") +
+  theme(strip.background = element_rect(fill = "white"),
+        strip.text = element_text(face = "bold"))
+
+ggsave(here("output","kewalo","respirometry","PR_boxplots_chamber.pdf"),
+       device = "pdf",height = 8, width = 8, PR_plot)
