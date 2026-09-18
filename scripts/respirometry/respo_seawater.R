@@ -281,8 +281,8 @@ ggsave(here("output", "kewalo","respirometry","PR_boxplots_kewalo.pdf"),
        device = "pdf", height = 8, width = 8, PR_plot)
 
 #####Jordan addition
-RespoR_PR %>% #bottle size difference
-  filter(run_block %in% c("K_RUN3", "K_RUN4")) %>%   # only runs where chamber type varies
+chamber_plot <- RespoR_PR %>% 
+  filter(run_block %in% c("K_RUN3", "K_RUN4")) %>%
   ggplot(aes(x = site_ID, y = Values, fill = chamber_type)) +
   geom_boxplot(outlier.shape = NA, position = position_dodge(width = 0.8)) +
   geom_point(aes(color = chamber_type), position = position_jitterdodge(jitter.width = 0.1, dodge.width = 0.8), alpha = 0.7) +
@@ -292,5 +292,32 @@ RespoR_PR %>% #bottle size difference
   theme(strip.background = element_rect(fill = "white"),
         strip.text = element_text(face = "bold"))
 
-ggsave(here("output","kewalo","respirometry","PR_boxplots_chamber.pdf"),
-       device = "pdf",height = 8, width = 8, PR_plot)
+ggsave(here("output", "kewalo", "respirometry", "PR_boxplots_chamber.pdf"),
+       device = "pdf", height = 8, width = 8, chamber_plot)
+
+####
+#Finding the offenders
+RespoR_PR %>% 
+  filter(run_block %in% c("K_RUN3","K_RUN4")) %>%
+  arrange(desc(abs(Values))) %>% 
+  select(sample_ID, site_ID, chamber_type, PR, Values) %>%
+  head(5)
+
+###Note sample ID and sub in below to find time of incidence and truncate metadat
+raw_check <- read_csv(skip = 1, file.path(path.p, "SAMPLEID_RUN4_O2.csv")) %>%   # swap in your sample's actual filename
+  dplyr::select(Date, Time, Value, Temp) %>%
+  unite(Date, Time, col = "Time", sep = " ") %>%
+  mutate(Time = mdy_hms(Time))
+
+par(mfrow = c(2,1))
+plot(raw_check$Time, raw_check$Value, type = "l", main = "O2 (full raw trace)")
+plot(raw_check$Time, raw_check$Temp,  type = "l", main = "Temp (full raw trace)")
+par(mfrow = c(1,1))
+
+#### look for the spike and estimate a filter range, had to filter out the start time extreme
+raw_check %>% 
+  filter(Time > as.POSIXct("2026-09-01 13:30:00", tz = "UTC")) %>%
+  filter(Value > 400) %>% 
+  slice(1) %>% 
+  pull(Time)
+
