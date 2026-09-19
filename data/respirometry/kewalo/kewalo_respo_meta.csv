@@ -44,15 +44,15 @@ date,start_time,stop_time,site_ID,sample_ID,FileID_csv,light_dark,run_block,cham
 8/6/26,10:15:00,12:23:00,S3,S3.1_RUN3,S3.1_RUN3_O2.csv,DARK,K_RUN3,7,
 8/6/26,10:15:00,12:23:00,S3,S3.2_RUN3,S3.2_RUN3_O2.csv,DARK,K_RUN3,8,
 8/6/26,10:15:00,12:23:00,S3,S3.3_RUN3,S3.3_RUN3_O2.csv,DARK,K_RUN3,9,
-8/6/26,12:23:00,16:27:00,S1,S1.1_RUN3,S1.1_RUN3_O2.csv,LIGHT,K_RUN3,1,
-8/6/26,12:23:00,16:27:00,S1,S1.2_RUN3,S1.2_RUN3_O2.csv,LIGHT,K_RUN3,2,
-8/6/26,12:23:00,16:27:00,S1,S1.3_RUN3,S1.3_RUN3_O2.csv,LIGHT,K_RUN3,3,
-8/6/26,12:23:00,16:27:00,S2,S2.1_RUN3,S2.1_RUN3_O2.csv,LIGHT,K_RUN3,4,
-8/6/26,12:23:00,16:27:00,S2,S2.2_RUN3,S2.2_RUN3_O2.csv,LIGHT,K_RUN3,5,
-8/6/26,12:23:00,16:27:00,S2,S2.3_RUN3,S2.3_RUN3_O2.csv,LIGHT,K_RUN3,6,
-8/6/26,12:23:00,16:27:00,S3,S3.1_RUN3,S3.1_RUN3_O2.csv,LIGHT,K_RUN3,7,
-8/6/26,12:23:00,16:27:00,S3,S3.2_RUN3,S3.2_RUN3_O2.csv,LIGHT,K_RUN3,8,
-8/6/26,12:23:00,16:27:00,S3,S3.3_RUN3,S3.3_RUN3_O2.csv,LIGHT,K_RUN3,9,
+8/6/26,12:23:00,15:23:00,S1,S1.1_RUN3,S1.1_RUN3_O2.csv,LIGHT,K_RUN3,1,"LIGHT stop_time cut short (was 16:27:00) to speed up for-loop runtime — RUN3 has ~2x the data points of other runs after thinning, was freezing/slow at the LoLinR fitting step."
+8/6/26,12:23:00,15:23:00,S1,S1.2_RUN3,S1.2_RUN3_O2.csv,LIGHT,K_RUN3,2,"LIGHT stop_time cut short (was 16:27:00) to speed up for-loop runtime — RUN3 has ~2x the data points of other runs after thinning, was freezing/slow at the LoLinR fitting step."
+8/6/26,12:23:00,15:23:00,S1,S1.3_RUN3,S1.3_RUN3_O2.csv,LIGHT,K_RUN3,3,"LIGHT stop_time cut short (was 16:27:00) to speed up for-loop runtime — RUN3 has ~2x the data points of other runs after thinning, was freezing/slow at the LoLinR fitting step."
+8/6/26,12:23:00,15:23:00,S2,S2.1_RUN3,S2.1_RUN3_O2.csv,LIGHT,K_RUN3,4,"LIGHT stop_time cut short (was 16:27:00) to speed up for-loop runtime — RUN3 has ~2x the data points of other runs after thinning, was freezing/slow at the LoLinR fitting step."
+8/6/26,12:23:00,15:23:00,S2,S2.2_RUN3,S2.2_RUN3_O2.csv,LIGHT,K_RUN3,5,"LIGHT stop_time cut short (was 16:27:00) to speed up for-loop runtime — RUN3 has ~2x the data points of other runs after thinning, was freezing/slow at the LoLinR fitting step."
+8/6/26,12:23:00,15:23:00,S2,S2.3_RUN3,S2.3_RUN3_O2.csv,LIGHT,K_RUN3,6,"LIGHT stop_time cut short (was 16:27:00) to speed up for-loop runtime — RUN3 has ~2x the data points of other runs after thinning, was freezing/slow at the LoLinR fitting step."
+8/6/26,12:23:00,15:23:00,S3,S3.1_RUN3,S3.1_RUN3_O2.csv,LIGHT,K_RUN3,7,"LIGHT stop_time cut short (was 16:27:00) to speed up for-loop runtime — RUN3 has ~2x the data points of other runs after thinning, was freezing/slow at the LoLinR fitting step."
+8/6/26,12:23:00,15:23:00,S3,S3.2_RUN3,S3.2_RUN3_O2.csv,LIGHT,K_RUN3,8,"LIGHT stop_time cut short (was 16:27:00) to speed up for-loop runtime — RUN3 has ~2x the data points of other runs after thinning, was freezing/slow at the LoLinR fitting step."
+8/6/26,12:23:00,15:23:00,S3,S3.3_RUN3,S3.3_RUN3_O2.csv,LIGHT,K_RUN3,9,"LIGHT stop_time cut short (was 16:27:00) to speed up for-loop runtime — RUN3 has ~2x the data points of other runs after thinning, was freezing/slow at the LoLinR fitting step."
 9/1/26,10:29:00,13:00:00,S1,S1.1_RUN4,S1.1_RUN4_O2.csv,DARK,K_RUN4,3,
 9/1/26,10:29:00,13:00:00,S1,S1.2_RUN4,S1.2_RUN4_O2.csv,DARK,K_RUN4,4,
 9/1/26,10:29:00,13:00:00,S1,S1.3_RUN4,S1.3_RUN4_O2.csv,DARK,K_RUN4,5,

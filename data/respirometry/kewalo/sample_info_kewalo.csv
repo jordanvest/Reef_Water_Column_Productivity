@@ -44,15 +44,15 @@ start_time,stop_time,date,site_ID,sample_ID,FileID_csv,light_dark,run_block,cham
 2026-08-06T10:15:00Z,2026-08-06T12:23:00Z,2026-08-06,S3,S3.1_RUN3,S3.1_RUN3_O2.csv,DARK,K_RUN3,7,NA,1,350,1,BOD
 2026-08-06T10:15:00Z,2026-08-06T12:23:00Z,2026-08-06,S3,S3.2_RUN3,S3.2_RUN3_O2.csv,DARK,K_RUN3,8,NA,1,500,1,MASON
 2026-08-06T10:15:00Z,2026-08-06T12:23:00Z,2026-08-06,S3,S3.3_RUN3,S3.3_RUN3_O2.csv,DARK,K_RUN3,9,NA,1,350,1,BOD
-2026-08-06T12:23:00Z,2026-08-06T16:27:00Z,2026-08-06,S1,S1.1_RUN3,S1.1_RUN3_O2.csv,LIGHT,K_RUN3,1,NA,1,350,1,BOD
-2026-08-06T12:23:00Z,2026-08-06T16:27:00Z,2026-08-06,S1,S1.2_RUN3,S1.2_RUN3_O2.csv,LIGHT,K_RUN3,2,NA,1,500,1,MASON
-2026-08-06T12:23:00Z,2026-08-06T16:27:00Z,2026-08-06,S1,S1.3_RUN3,S1.3_RUN3_O2.csv,LIGHT,K_RUN3,3,NA,1,500,1,MASON
-2026-08-06T12:23:00Z,2026-08-06T16:27:00Z,2026-08-06,S2,S2.1_RUN3,S2.1_RUN3_O2.csv,LIGHT,K_RUN3,4,NA,1,350,1,BOD
-2026-08-06T12:23:00Z,2026-08-06T16:27:00Z,2026-08-06,S2,S2.2_RUN3,S2.2_RUN3_O2.csv,LIGHT,K_RUN3,5,NA,1,350,1,BOD
-2026-08-06T12:23:00Z,2026-08-06T16:27:00Z,2026-08-06,S2,S2.3_RUN3,S2.3_RUN3_O2.csv,LIGHT,K_RUN3,6,NA,1,500,1,MASON
-2026-08-06T12:23:00Z,2026-08-06T16:27:00Z,2026-08-06,S3,S3.1_RUN3,S3.1_RUN3_O2.csv,LIGHT,K_RUN3,7,NA,1,350,1,BOD
-2026-08-06T12:23:00Z,2026-08-06T16:27:00Z,2026-08-06,S3,S3.2_RUN3,S3.2_RUN3_O2.csv,LIGHT,K_RUN3,8,NA,1,500,1,MASON
-2026-08-06T12:23:00Z,2026-08-06T16:27:00Z,2026-08-06,S3,S3.3_RUN3,S3.3_RUN3_O2.csv,LIGHT,K_RUN3,9,NA,1,350,1,BOD
+2026-08-06T12:23:00Z,2026-08-06T15:23:00Z,2026-08-06,S1,S1.1_RUN3,S1.1_RUN3_O2.csv,LIGHT,K_RUN3,1,"LIGHT stop_time cut short (was 16:27:00) to speed up for-loop runtime — RUN3 has ~2x the data points of other runs after thinning, was freezing/slow at the LoLinR fitting step.",1,350,1,BOD
+2026-08-06T12:23:00Z,2026-08-06T15:23:00Z,2026-08-06,S1,S1.2_RUN3,S1.2_RUN3_O2.csv,LIGHT,K_RUN3,2,"LIGHT stop_time cut short (was 16:27:00) to speed up for-loop runtime — RUN3 has ~2x the data points of other runs after thinning, was freezing/slow at the LoLinR fitting step.",1,500,1,MASON
+2026-08-06T12:23:00Z,2026-08-06T15:23:00Z,2026-08-06,S1,S1.3_RUN3,S1.3_RUN3_O2.csv,LIGHT,K_RUN3,3,"LIGHT stop_time cut short (was 16:27:00) to speed up for-loop runtime — RUN3 has ~2x the data points of other runs after thinning, was freezing/slow at the LoLinR fitting step.",1,500,1,MASON
+2026-08-06T12:23:00Z,2026-08-06T15:23:00Z,2026-08-06,S2,S2.1_RUN3,S2.1_RUN3_O2.csv,LIGHT,K_RUN3,4,"LIGHT stop_time cut short (was 16:27:00) to speed up for-loop runtime — RUN3 has ~2x the data points of other runs after thinning, was freezing/slow at the LoLinR fitting step.",1,350,1,BOD
+2026-08-06T12:23:00Z,2026-08-06T15:23:00Z,2026-08-06,S2,S2.2_RUN3,S2.2_RUN3_O2.csv,LIGHT,K_RUN3,5,"LIGHT stop_time cut short (was 16:27:00) to speed up for-loop runtime — RUN3 has ~2x the data points of other runs after thinning, was freezing/slow at the LoLinR fitting step.",1,350,1,BOD
+2026-08-06T12:23:00Z,2026-08-06T15:23:00Z,2026-08-06,S2,S2.3_RUN3,S2.3_RUN3_O2.csv,LIGHT,K_RUN3,6,"LIGHT stop_time cut short (was 16:27:00) to speed up for-loop runtime — RUN3 has ~2x the data points of other runs after thinning, was freezing/slow at the LoLinR fitting step.",1,500,1,MASON
+2026-08-06T12:23:00Z,2026-08-06T15:23:00Z,2026-08-06,S3,S3.1_RUN3,S3.1_RUN3_O2.csv,LIGHT,K_RUN3,7,"LIGHT stop_time cut short (was 16:27:00) to speed up for-loop runtime — RUN3 has ~2x the data points of other runs after thinning, was freezing/slow at the LoLinR fitting step.",1,350,1,BOD
+2026-08-06T12:23:00Z,2026-08-06T15:23:00Z,2026-08-06,S3,S3.2_RUN3,S3.2_RUN3_O2.csv,LIGHT,K_RUN3,8,"LIGHT stop_time cut short (was 16:27:00) to speed up for-loop runtime — RUN3 has ~2x the data points of other runs after thinning, was freezing/slow at the LoLinR fitting step.",1,500,1,MASON
+2026-08-06T12:23:00Z,2026-08-06T15:23:00Z,2026-08-06,S3,S3.3_RUN3,S3.3_RUN3_O2.csv,LIGHT,K_RUN3,9,"LIGHT stop_time cut short (was 16:27:00) to speed up for-loop runtime — RUN3 has ~2x the data points of other runs after thinning, was freezing/slow at the LoLinR fitting step.",1,350,1,BOD
 2026-09-01T10:29:00Z,2026-09-01T13:00:00Z,2026-09-01,S1,S1.1_RUN4,S1.1_RUN4_O2.csv,DARK,K_RUN4,3,NA,1,350,1,BOD
 2026-09-01T10:29:00Z,2026-09-01T13:00:00Z,2026-09-01,S1,S1.2_RUN4,S1.2_RUN4_O2.csv,DARK,K_RUN4,4,NA,1,500,1,MASON
 2026-09-01T10:29:00Z,2026-09-01T13:00:00Z,2026-09-01,S1,S1.3_RUN4,S1.3_RUN4_O2.csv,DARK,K_RUN4,5,NA,1,500,1,MASON
