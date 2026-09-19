@@ -1,0 +1,259 @@
+---
+title: "Reef Water Column Productivity — RUN4 Respirometry Analysis"
+subtitle: "Plankton P/R rates, chamber comparison, and QC checks"
+author: "Jordan Vest"
+date: today
+format:
+  html:
+    code-fold: true
+    code-summary: "Show code"
+    code-tools: true
+    toc: true
+    toc-depth: 3
+    theme: cosmo
+    embed-resources: true
+execute:
+  warning: false
+  message: false
+---
+
+## Overview
+
+Summary document for respo runs measuring plankton production/respiration rates from coastal seawater samples at Kewalo. Samples were put into two chamber types and in a temperature-regulated water bath (Inkbird). Started under dark conditions, turned on light later. Continuous measurements from PreSens OXY-10.
+
+Starting with RUN3, we began testing chamber design as an additional variable — some samples were run in
+350 mL BOD bottles, others in 500 mL mason jars, to check whether chambers/optode type meaningfully affect rates.
+
+This document walks through: the rate-calculation pipeline, a chamber-type comparison, data analysis decisions and a quick check on O2 rate v temperature correlation. Scripts from Dr. Nyssa Silbiger have been adapted for this analysis 
+
+```{r}
+#| label: setup
+library(tidyverse)
+library(here)
+library(patchwork)
+```
+
+## Data & Metadata
+
+Sample metadata (incubation windows, site, chamber type/volume) lives in `kewalo_respo_meta.csv` and
+`measurements_kewalo.csv`. Every sample's DARK/LIGHT time windows, chamber assignment, and any exclusions or
+truncations are tracked there.
+
+```{r}
+#| label: load-metadata
+RespoMeta <- read_csv(here("data","respirometry","kewalo","kewalo_respo_meta.csv"))
+BioData   <- read_csv(here("data","respirometry","kewalo","measurements_kewalo.csv"))
+
+RespoMeta %>%
+  filter(run_block == "K_RUN4") %>%
+  left_join(BioData, by = c("sample_ID","site_ID")) %>%
+  select(sample_ID, site_ID, light_dark, start_time, stop_time, chamber_type, volume_mL, notes) %>%
+  knitr::kable()
+```
+
+## Rate Calculation Pipeline
+
+Raw O2 data gets cut by DARK/LIGHT window times from the metadata and trimmed to drop the first 30 minutes (acclimation lag after each light transition), then thinned and fit with
+`LoLinR::rankLocReg()`.
+
+The code below is the actual for-loop from `respo_seawater.R` but is not executed here. 
+
+```{r}
+#| label: for-loop-code
+#| eval: false
+#| code-fold: show
+
+for(i in 1:length(filenames_final)) {
+  FRow <- as.numeric(which(Sample_Info$FileID_csv == filenames_final[i]))
+
+  Respo.Data1 <- read_csv(skip = 1, file.path(path.p, file.names.full[i])) %>%
+    dplyr::select(Date, Time, Value, Temp) %>%
+    unite(Date, Time, col = "Time", remove = TRUE, sep = " ") %>%
+    drop_na() %>%
+    mutate(Time = mdy_hms(Time))
+
+  oxy_subsets <- Sample_Info[FRow,] %>%
+    pmap(function(light_dark, start_time, stop_time, ...) {
+      Respo.Data1 %>%
+        filter(Time >= start_time & Time <= stop_time) %>%
+        arrange(Time) %>%
+        mutate(t_sec = as.numeric(difftime(Time, first(Time), units = "secs"))) %>%
+        mutate(light_dark = light_dark) %>%
+        filter(t_sec > 1800) %>%          # drop first 30 min (acclimation lag)
+        filter(row_number() %% 10 == 0)   # thin to every ~20 sec
+    })
+
+  combined_oxy <- bind_rows(oxy_subsets)
+
+  fit_reg <- function(data) {
+    rankLocReg(xall = data$t_sec, yall = data$Value, alpha = 0.2, method = "pc", verbose = FALSE)
+  }
+
+  df <- combined_oxy %>%
+    dplyr::select(t_sec, Value, Temp, light_dark) %>%
+    nest_by(light_dark) %>% ungroup() %>%
+    mutate(regs = furrr::future_map(data, fit_reg),
+           Temp.C = map_dbl(map(data, "Temp"), mean),
+           RegStats = map(regs, function(x) x$allRegs %>% slice(1) %>%
+                             dplyr::select(Intercept = b0, umol.L.sec = b1)))
+
+  # ... intercept/slope extracted, joined to Sample_Info, written into RespoR
+}
+```
+
+Rates are then converted to per-hour units using each sample's actual chamber volume (`volume_mL` from
+`measurements_kewalo.csv` — 350 mL for BOD bottles, 500 mL for mason jars), and Respiration/NetPhoto/
+GrossPhoto are derived per sample.
+
+### Rate results (RUN3 & RUN4)
+
+```{r}
+#| label: load-rates
+RespoR_PR <- read_csv(here("data","respirometry","kewalo","PnR_rates.csv"))
+
+RespoR_PR %>%
+  filter(run_block %in% c("K_RUN3","K_RUN4")) %>%
+  ggplot(aes(x = site_ID, y = Values, group = site_ID, color = site_ID, shape = run_block)) +
+  geom_point() + geom_line() +
+  facet_wrap(run_block ~ PR, scales = "free") +
+  theme_bw() +
+  labs(x = "Site", y = "µmol/hr") +
+  theme(strip.background = element_rect(fill = "white"), strip.text = element_text(face = "bold"))
+```
+
+*Diagnostic plots: each sample's plot is saved to `output/kewalo/respirometry/`. 
+[Add 1–2 representative examples here, e.g. a clean fit vs. a noisier one, once
+you've picked which are worth showing.]*
+
+## Sample Exclusion: S2.3_RUN4
+
+During RUN4, S2.3's spot probe came loose mid-run. The raw trace shows O2 sitting at a stable baseline
+(~360–380 µmol/L) for most of the LIGHT period, then spiking sharply to ~440 before crashing back to
+baseline
+
+```{r}
+#| label: s23-raw-trace
+path_run4 <- here("data","respirometry","kewalo","rawo2","K_RUN4")
+
+raw_s23 <- read_csv(skip = 1, file.path(path_run4, "S2.3_RUN4_O2.csv")) %>%
+  dplyr::select(Date, Time, Value, Temp) %>%
+  unite(Date, Time, col = "Time", sep = " ") %>%
+  mutate(Time = mdy_hms(Time)) %>%
+  drop_na()
+
+ggplot(raw_s23, aes(x = Time, y = Value)) +
+  geom_line() +
+  geom_vline(xintercept = as.numeric(as.POSIXct("2026-09-01 13:45:00", tz = "UTC")),
+             color = "red", linetype = "dashed") +
+  theme_bw() +
+  labs(title = "S2.3_RUN4 — raw O2 trace", subtitle = "Dashed line: truncation point applied",
+       y = expression(paste("O"[2], " (", mu, "mol/L)")))
+```
+
+**How I dealt with this:**
+
+1. Attempted to truncate the LIGHT window's `stop_time` to 13:45:00 (just before the spike begins),
+   rather than discarding the whole sample — the goal was to keep whatever clean data remained.
+2. This left only ~15 minutes of usable data after the standard 30-minute acclimation cutoff — 9 data points
+   after thinning, too few to trust a bootstrapped regression fit and yielded the same outlier in the data.
+3. **Final decision: excluded S2.3_RUN4 entirely** from the analysis (both DARK and LIGHT). The DARK-period
+   data was clean, but with LIGHT unusable, NetPhoto/GrossPhoto couldn't be calculated for this sample either
+   way, and a Respiration-only data point without its paired photosynthesis measurement isn't very useful for
+   the P/R comparison.
+
+This is also recorded in the metadata note column
+
+## Chamber Type Comparison
+
+RUN3 and RUN4 include a mix of 350 mL BOD bottles and 500 mL mason jars, to help decide what gets the best data going forward. 
+
+```{r}
+#| label: chamber-plot
+RespoR_PR %>%
+  filter(run_block %in% c("K_RUN3","K_RUN4")) %>%
+  ggplot(aes(x = site_ID, y = Values, fill = chamber_type)) +
+  geom_boxplot(outlier.shape = NA, position = position_dodge(width = 0.8)) +
+  geom_point(aes(color = chamber_type),
+             position = position_jitterdodge(jitter.width = 0.1, dodge.width = 0.8), alpha = 0.7) +
+  facet_wrap(run_block ~ PR, scales = "free") +
+  theme_bw() +
+  labs(x = "Site", y = "µmol/hr", fill = "Chamber Type", color = "Chamber Type") +
+  theme(strip.background = element_rect(fill = "white"), strip.text = element_text(face = "bold"))
+```
+
+```{r}
+#| label: chamber-ttest
+RespoR_PR %>%
+  filter(run_block == "K_RUN4") %>%
+  group_by(PR) %>%
+  summarise(
+    p_value = tryCatch(t.test(Values ~ chamber_type)$p.value, error = function(e) NA)
+  ) %>%
+  knitr::kable(digits = 3)
+```
+
+*Note: sample sizes per chamber type are small (n = 4 per group in RUN4) — treat this as a preliminary check,
+not a definitive test. [Interpret result here once rendered.]*
+
+## Temperature vs. O2 Diagnostic
+
+Under LIGHT conditions, the water bath temperature shifted by about 1°C (vs. minimal drift in DARK) — partly
+driven by the addedheat from the incubation light, and partly by an ice pack added mid-run to counteract heating. This
+section checks whether the O2 increases reflect real productivity or are being driven by a 
+temperature shift.
+
+```{r}
+#| label: temp-o2-setup
+acclim_sec <- 1800
+
+RespoMeta_run4 <- RespoMeta %>%
+  filter(run_block == "K_RUN4") %>%
+  mutate(start_time = mdy_hms(paste(date, start_time)),
+         stop_time  = mdy_hms(paste(date, stop_time)))
+
+read_raw <- function(filename) {
+  raw <- read_csv(skip = 1, file.path(path_run4, filename)) %>%
+    dplyr::select(Date, Time, Value, Temp) %>%
+    unite(Date, Time, col = "Time", sep = " ") %>%
+    mutate(Time = mdy_hms(Time)) %>%
+    drop_na(Time, Value, Temp) %>%
+    arrange(Time)
+
+  meta_rows <- RespoMeta_run4 %>% filter(FileID_csv == filename)
+
+  meta_rows %>%
+    pmap_dfr(function(light_dark, start_time, stop_time, ...) {
+      raw %>%
+        filter(Time >= start_time & Time <= stop_time) %>%
+        mutate(t_sec = as.numeric(difftime(Time, first(Time), units = "secs"))) %>%
+        filter(t_sec > acclim_sec) %>%
+        mutate(light_dark = light_dark, sample_ID = sub("_O2.csv", "", filename))
+    })
+}
+
+filenames_run4 <- list.files(path_run4, pattern = "csv$")
+all_raw <- map_dfr(filenames_run4, read_raw)
+light_only <- all_raw %>% filter(light_dark == "LIGHT")
+```
+
+### Correlation summary (LIGHT period)
+
+```{r}
+#| label: temp-o2-cor
+light_only %>%
+  group_by(sample_ID) %>%
+  summarise(cor_temp_o2 = cor(Temp, Value, use = "complete.obs")) %>%
+  arrange(desc(abs(cor_temp_o2))) %>%
+  knitr::kable(digits = 2)
+```
+
+
+
+## Summary for Discussion
+
+- [ ] Chamber type effect: significant / not significant — see t-test above
+- [ ] Temperature-driven artifact: present / not present — see differenced lag check above
+- [x] S2.3_RUN4 excluded — probe disturbance, insufficient clean data post-truncation (see Sample Exclusion
+      section)
+- [ ] Open questions / next steps for follow-up
+

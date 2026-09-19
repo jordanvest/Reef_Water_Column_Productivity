@@ -241,6 +241,7 @@ ch.vol <- 350 #mL #of small chambers
 RespoR2 <- RespoR %>%
   #drop_na(FileID_csv) %>% # drop NAs
   left_join(Sample_Info) %>% # Join the raw respo calculations with the metadata
+  drop_na(sample_ID) %>%          # J ADDED THIS — drops the leftover phantom rows 
   mutate(Ch.Volume.mL = volume_mL) %>% # was =ch.vol #measured volume of chambers with coral + stand + stirbar displacement
   mutate(Ch.Volume.L = Ch.Volume.mL * 0.001) %>% # mL to L conversion
   mutate(umol.sec = umol.L.sec*Ch.Volume.L) %>% #Account for chamber volume to convert from umol L-1 s-1 to umol s-1. This standardizes across water volumes (different because of coral size) and removes per Liter
