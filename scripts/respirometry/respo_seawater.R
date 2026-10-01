@@ -47,7 +47,7 @@ library(dplyr)
 
 #set the path to all of the raw oxygen datasheets
 ## these are saved onto the computer in whatever file path/naming scheme you saved things to 
-path.p<-here("data","respirometry","kewalo", "rawo2", "K_RUN4") #the location of all your respirometry files
+path.p<-here("data","respirometry","kewalo", "rawo2", "K_RUN5") #the location of all your respirometry files
 #you can change to individual run folders if needed
 #use this to check file path is good before running script 
 #print(path.p)
@@ -58,9 +58,9 @@ filenames_final<-basename(list.files(path = path.p, pattern = "csv$", recursive 
 
 #basename above removes the subdirectory name from the file, re-name as file.names.full
 file.names.full<-list.files(path = path.p, pattern = "csv$", recursive = TRUE) 
-#print(filenames_final)#print(filenames_final)
+#print(filenames_final)
 #empty chamber volume
-ch.vol <- 350 #mL #of small chambers 
+ch.vol <- 236.59 #mL #of small chambers 
 ###J to update if chambers change
 
 ######### Load and tidy files ###############
@@ -236,7 +236,7 @@ write_csv(RespoR, here("data","respirometry","kewalo","kewalo_RespoR.csv"))
 
 RespoR <- read_csv(here("data","respirometry","kewalo","kewalo_RespoR.csv"))
 Sample_Info <- read_csv(here("data","respirometry","kewalo","sample_info_kewalo.csv"))
-ch.vol <- 350 #mL #of small chambers 
+ch.vol <- 236.59 #mL #of small chambers 
 
 RespoR2 <- RespoR %>%
   #drop_na(FileID_csv) %>% # drop NAs
