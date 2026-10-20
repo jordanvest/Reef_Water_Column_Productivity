@@ -47,7 +47,7 @@ library(dplyr)
 
 #set the path to all of the raw oxygen datasheets
 ## these are saved onto the computer in whatever file path/naming scheme you saved things to 
-day <- "D1"   # MPW: change this ONE line to D1, D2 ... D6 and run the script top to bottom, one day at a time
+day <- "D4"   # MPW: change this ONE line to D1, D2 ... D6 and run the script top to bottom, one day at a time
 path.p<-here("data","respirometry","mpw", "rawo2", day) #the location of all your respirometry files
 #use this to check file path is good before running script
 #print(path.p)
@@ -297,22 +297,44 @@ qc_dark_up   # open the PDFs in output/mpw/respirometry/D#/ for these samples
 SampleMeta <- read_csv(here("data","mpw_sample_meta.csv")) %>% 
   dplyr::select(sample_ID, habitat, dist_to_sgd_m, flag)
 
-PR_plot <- RespoR_PR %>% 
+sgd_cutoff_m <- 10   # MPW: lagoon samples closer than this to the SGD = "near_SGD", the rest of the tidepool = "T"
+# (dist_to_sgd_m is from the PLANNED points for now - rerun after GPS update)
+
+plot_data <- RespoR_PR %>% 
   left_join(SampleMeta, by = "sample_ID") %>% 
-  mutate(habitat = factor(habitat, levels = c("lagoon","cove","ocean","blank"))) %>% 
-  ggplot(aes(x = habitat, y = Values)) +
-  geom_boxplot(outlier.shape = NA) +
-  geom_jitter(aes(color = run_block), width = 0.15, alpha = 0.7) +
-  geom_hline(yintercept = 0, linetype = "dashed") +
-  facet_wrap(~PR, scales = "free_y") +
-  theme_bw() +
-  labs(x = "Habitat", y = expression(paste(mu,"mol O"[2]," hr"^-1)), color = "Day") +
+  filter(habitat != "blank") %>%                       # put a # at the start of this line to add the blanks (B) back in
+  filter(!sample_ID %in% qc_dark_up$sample_ID) %>%     # drops QC samples (all 3 rates); put a # here to show them
+  mutate(habitat = factor(habitat,
+                          levels = c("lagoon","cove","ocean","blank"),
+                          labels = c("L","C","O","B")),          # short x-axis labels
+         # habitat split by SGD distance: near_SGD / T (rest of tidepool) / C / O / B
+         habitat_sgd = case_when(habitat == "L" & dist_to_sgd_m <  sgd_cutoff_m ~ "near_SGD",
+                                 habitat == "L" & dist_to_sgd_m >= sgd_cutoff_m ~ "T",
+                                 TRUE ~ as.character(habitat)),
+         habitat_sgd = factor(habitat_sgd, levels = c("near_SGD","T","C","O","B")),
+         PR = factor(PR, levels = c("Respiration","NetPhoto","GrossPhoto"),
+                     labels = c("Respiration","Net photosynthesis","Gross photosynthesis")))
+
+# which samples were dropped by the QC filter (for your notes)
+qc_dark_up %>% dplyr::select(run_block, sample_ID, Values, notes)
+
+PR_plot <- plot_data %>% 
+  ggplot(aes(x = habitat_sgd, y = Values)) +   # MPW: change habitat_sgd back to habitat for plain L / C / O
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey60") +
+  geom_boxplot(outlier.shape = NA, width = 0.5) +
+  geom_jitter(aes(color = run_block), width = 0.12, alpha = 0.8, size = 2) +
+  facet_wrap(~PR, nrow = 1) +              # same y-axis on all 3 panels so they compare directly
+  scale_x_discrete(drop = TRUE) +
+  theme_bw(base_size = 12) +
+  labs(x = paste0("Habitat (near_SGD = tidepool < ", sgd_cutoff_m, " m from SGD, T = rest of tidepool, C = cove, O = ocean)"),
+       y = expression(paste(mu,"mol O"[2]," hr"^-1)), color = "Day") +
   theme(strip.background = element_rect(fill = "white"),
-        strip.text = element_text(face = "bold"))
+        strip.text = element_text(face = "bold"),
+        panel.grid.minor = element_blank())
 PR_plot
 
 ggsave(here("output","mpw","respirometry","PR_by_habitat_mpw.pdf"),
-       device = "pdf", height = 5, width = 10, PR_plot)
+       device = "pdf", height = 4, width = 9, PR_plot)
 
 ###Look at one raw trace: sub in the sample ID to find a spike/bubble and adjust its times in the metadata
 raw_check <- read_csv(skip = 1, file.path(path.p, "MPW_I01_O2.csv")) %>%   # swap in the file name (must be in the current day folder)

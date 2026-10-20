@@ -47,7 +47,7 @@ library(dplyr)
 
 #set the path to all of the raw oxygen datasheets
 ## these are saved onto the computer in whatever file path/naming scheme you saved things to 
-path.p<-here("data","respirometry","kewalo", "rawo2", "K_RUN5") #the location of all your respirometry files
+path.p<-here("data","respirometry","mpw", "rawo2", "D6") #the location of all your respirometry files
 #you can change to individual run folders if needed
 #use this to check file path is good before running script 
 #print(path.p)
@@ -60,16 +60,16 @@ filenames_final<-basename(list.files(path = path.p, pattern = "csv$", recursive 
 file.names.full<-list.files(path = path.p, pattern = "csv$", recursive = TRUE) 
 #print(filenames_final)
 #empty chamber volume
-ch.vol <- 236.59 #mL #of small chambers 
+ch.vol <- 473 #mL #of small chambers 
 ###J to update if chambers change
 
 ######### Load and tidy files ###############
 ############################################
 #Load your respiration data file, with all the times, water volumes(mL), #not doing dry weight just SA
 #RespoMeta <- read_csv(here("Data","RespoFiles","Respo_Metadata_SGDDilutions_Cabral_Varari.csv"))
-BioData <- read_csv(here("data","respirometry", "kewalo", "measurements_kewalo.csv")) #ch vol, sa, chla, etc things to normalize to
+BioData <- read_csv(here("data","respirometry", "mpw", "mpw_measurements.csv")) #ch vol, sa, chla, etc things to normalize to
 
-RespoMeta <- read_csv(here("data","respirometry","kewalo", "kewalo_respo_meta.csv")) #metadata, ID, site, etc
+RespoMeta <- read_csv(here("data","respirometry","mpw", "mpw_respo_meta.csv")) #metadata, ID, site, etc
 #View(BioData)
 #View(RespoMeta)
 
@@ -197,7 +197,7 @@ for(i in 1:length(filenames_final)) {
     mutate(light = paste(light_dark))
   
   for(j in 1:length(df$light)){
-    pdf(paste0(here("output","kewalo", "respirometry"),"/",rename,"_",j,".pdf" ))
+    pdf(paste0(here("data", "respirometry", "mpw", "processed", "D6"),"/",rename,"_",j,".pdf" ))
     plot(df$regs[[j]])
     dev.off() 
   }
@@ -278,7 +278,7 @@ PR_plot <- RespoR_PR %>%
   theme(strip.background = element_rect(fill = "white"),
         strip.text = element_text(face = "bold"))
 
-ggsave(here("output", "kewalo","respirometry","PR_boxplots_kewalo.pdf"),
+ggsave(here("output", "mpw","respirometry","PR_boxplots_kewalo.pdf"),
        device = "pdf", height = 8, width = 8, PR_plot)
 
 #####Jordan addition
@@ -293,7 +293,7 @@ chamber_plot <- RespoR_PR %>%
   theme(strip.background = element_rect(fill = "white"),
         strip.text = element_text(face = "bold"))
 
-ggsave(here("output", "kewalo", "respirometry", "PR_boxplots_chamber.pdf"),
+ggsave(here("output", "mpw", "respirometry", "PR_boxplots_chamber.pdf"),
        device = "pdf", height = 8, width = 8, chamber_plot)
 
 ####
