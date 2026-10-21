@@ -222,6 +222,62 @@ plot_data %>%
   theme(strip.background = element_rect(fill = "white"), strip.text = element_text(face = "bold"))
 ```
 
+### By habitat
+```{r}
+#| label: median-rates-by-habitat
+# one row per sample, with respiration, net and gross photosynthesis as columns
+rates_wide <- RespoR_PR %>%
+  filter(!sample_ID %in% excluded$sample_ID) %>%              # drop excluded samples
+  select(sample_ID, PR, Values) %>%
+  pivot_wider(names_from = PR, values_from = Values) %>%
+  left_join(SampleMeta, by = "sample_ID") %>%                 # add habitat, salinity, day, etc.
+  filter(habitat != "blank") %>%
+  mutate(habitat = factor(habitat, levels = c("lagoon", "cove", "ocean")))
+
+# median and interquartile range (middle 50% of samples) for each habitat
+rates_wide %>%
+  group_by(habitat) %>%
+  summarise(n = n(),
+            across(c(Respiration, NetPhoto, GrossPhoto),
+                   ~ sprintf("%.2f (%.2f to %.2f)", median(.x), quantile(.x, 0.25), quantile(.x, 0.75)))) %>%
+  kable(caption = "Median rate (interquartile range) by habitat, umol O2/hr. Excluded samples removed.")
+
+# is the lagoon different from outside (cove + ocean)? Wilcoxon test, no assumption of normal data
+tibble(rate = c("Respiration", "NetPhoto", "GrossPhoto")) %>%
+  mutate(p_value = map_dbl(rate, ~ wilcox.test(rates_wide[[.x]] ~ (rates_wide$habitat == "lagoon"))$p.value),
+         p_value = signif(p_value, 2)) %>%
+  kable(caption = "Lagoon vs outside (Wilcoxon test)")
+```
+
+### Rates vs measured salinity (lagoon)
+
+Salinity measured in each sample is used here as the groundwater tracer (lower salinity = more groundwater), instead of distance on the map.
+
+```{r}
+#| label: rates-vs-salinity-lagoon
+#| fig-height: 4
+#| fig-width: 10
+rates_wide %>%
+  filter(habitat == "lagoon", !is.na(salinity)) %>%
+  pivot_longer(c(Respiration, NetPhoto, GrossPhoto), names_to = "PR", values_to = "Values") %>%
+  mutate(PR = factor(PR, levels = c("Respiration", "NetPhoto", "GrossPhoto"),
+                     labels = c("Respiration", "Net photosynthesis", "Gross photosynthesis")),
+         day = paste0("D", day)) %>%
+  ggplot(aes(x = salinity, y = Values)) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey60") +
+  geom_point(aes(color = day), size = 2.3, alpha = 0.85) +
+  geom_smooth(method = "lm", color = "black", linewidth = 0.7) +   # one straight-line trend for all days together
+  facet_wrap(~PR, nrow = 1) +
+  scale_x_reverse() +                                              # fresher water on the right
+  theme_bw(base_size = 12) +
+  labs(x = "Salinity (fresher water to the right)", y = expression(paste(mu, "mol O"[2], " hr"^-1)), color = "Day") +
+  theme(strip.background = element_rect(fill = "white"), strip.text = element_text(face = "bold"),
+        panel.grid.minor = element_blank())
+```
+```
+
+
+
 ### By day
 
 *To do.*

@@ -1,14 +1,14 @@
 sample_ID,sample_type,day,date,site_ID,habitat,chamber_channel,planned_lat,planned_lon,dist_to_sgd_m,sampler,time_collected,depth_cm,time_measured,temp_C,pH,mV,DO_pct,DO_mgL,salinity,chl_vol_mL,NUT,fDOM,FCM,TA,fcm_sample_vol_mL,tide_ft,tide_stage,field_notes,lab_notes,filtered_by,orion_by,flag,flag_reason,respo_start,lights_on,lights_ready,respo_stop
-MPW_I01,sample,1,2026-10-01,I,lagoon,13,WP0021,,0,Ally,7:06,56,11:07,26.749,7.93,-50.5,87,5.68,34.56,1000,,,,,,,,flat in tidepool,bottles not kept covered in lab; I07 match,Ally,Jordan,,,13:00,14:52,15:03,16:52
-MPW_I02,sample,1,2026-10-01,I,lagoon,20,WP0022,,0,Ally,7:16,135,11:11,26.786,7.93,-50.5,72.8,4.79,32.85,1000,,,,,,,,flat in tidepool,matches O05,Ally,Jordan,,,13:00,14:52,15:03,16:52
-MPW_I03,sample,1,2026-10-01,I,lagoon,14,WP0023,,4.5,Ally,7:28,37,10:21,26.61,7.9,-49.1,64,4.23,32.57,1000,,,,,,,,flat in tidepool,,Ally,Jordan,,,13:00,14:52,15:03,16:52
-MPW_I04,sample,1,2026-10-01,I,lagoon,1,WP0024,,0,Ally,7:36,85,10:07,26.723,7.96,-52.8,67.8,4.46,33.25,1100,,,,,,,,flat in tidepool,,Ally,Jordan,,,13:00,14:52,15:03,16:52
-MPW_I05,sample,1,2026-10-01,I,lagoon,10,WP0025,,8.8,Ally,7:49,52,10:58,26.856,8.11,-61.3,87.3,5.68,33.98,1000,,,,,,,,flat in tidepool,,Ally,Jordan,,,13:00,14:52,15:03,16:52
-MPW_I06,sample,1,2026-10-01,I,lagoon,15,WP0026,,3.6,Ally,8:13,135,10:12,26.703,8.02,-55.9,84.5,5.54,33.82,1100,,,,,,,,flat in tidepool,,Ally,Jordan,,,13:00,14:52,15:03,16:52
-MPW_I07,sample,1,2026-10-01,I,lagoon,5,WP0027,,15.8,Ally,8:23,52,11:02,27.03,8.08,-59.7,87,5.68,34.56,1000,,,,,,,,flat in tidepool,I01 match,Ally,Jordan,,,13:00,14:52,15:03,16:52
-MPW_I08,sample,1,2026-10-01,I,lagoon,12,WP0028,,1.9,Ally,8:30,84,11:47,26.517,8.09,-59.7,92.9,6.08,34.22,1000,,,,,,,,flat in tidepool,,Ally,Jordan,,,13:00,14:52,15:03,16:52
-MPW_I09,sample,1,2026-10-01,I,lagoon,8,WP0030,,2.1,Ally,8:41,30,11:43,26.44,8.08,-59.1,97.6,6.43,33.42,1000,,,,,,,,flat in tidepool,,Ally,Jordan,,,13:00,14:52,15:03,16:52
-MPW_I10,sample,1,2026-10-01,I,lagoon,18,WP0031,,1.3,Ally,8:57,120,11:49,26.714,8.09,-60.3,97.8,6.38,33.99,1000,,,,,,,,flat in tidepool,,Ally,Jordan,,,13:00,14:52,15:03,16:52
+MPW_I01,sample,1,2026-10-01,I,lagoon,13,21.649498,-158.063473,0,Ally,7:06,56,11:07,26.749,7.93,-50.5,87,5.68,34.56,1000,,,,,,,,flat in tidepool,bottles not kept covered in lab; I07 match,Ally,Jordan,,,13:00,14:52,15:03,16:52
+MPW_I02,sample,1,2026-10-01,I,lagoon,20,21.649572,-158.063517,0,Ally,7:16,135,11:11,26.786,7.93,-50.5,72.8,4.79,32.85,1000,,,,,,,,flat in tidepool,matches O05,Ally,Jordan,,,13:00,14:52,15:03,16:52
+MPW_I03,sample,1,2026-10-01,I,lagoon,14,21.649695,-158.063272,4.5,Ally,7:28,37,10:21,26.61,7.9,-49.1,64,4.23,32.57,1000,,,,,,,,flat in tidepool,,Ally,Jordan,,,13:00,14:52,15:03,16:52
+MPW_I04,sample,1,2026-10-01,I,lagoon,1,21.649824,-158.063132,0,Ally,7:36,85,10:07,26.723,7.96,-52.8,67.8,4.46,33.25,1100,,,,,,,,flat in tidepool,,Ally,Jordan,,,13:00,14:52,15:03,16:52
+MPW_I05,sample,1,2026-10-01,I,lagoon,10,21.650033,-158.063466,8.8,Ally,7:49,52,10:58,26.856,8.11,-61.3,87.3,5.68,33.98,1000,,,,,,,,flat in tidepool,,Ally,Jordan,,,13:00,14:52,15:03,16:52
+MPW_I06,sample,1,2026-10-01,I,lagoon,15,21.650455,-158.063386,3.6,Ally,8:13,135,10:12,26.703,8.02,-55.9,84.5,5.54,33.82,1100,,,,,,,,flat in tidepool,,Ally,Jordan,,,13:00,14:52,15:03,16:52
+MPW_I07,sample,1,2026-10-01,I,lagoon,5,21.650477,-158.062998,15.8,Ally,8:23,52,11:02,27.03,8.08,-59.7,87,5.68,34.56,1000,,,,,,,,flat in tidepool,I01 match,Ally,Jordan,,,13:00,14:52,15:03,16:52
+MPW_I08,sample,1,2026-10-01,I,lagoon,12,21.650524,-158.062848,1.9,Ally,8:30,84,11:47,26.517,8.09,-59.7,92.9,6.08,34.22,1000,,,,,,,,flat in tidepool,,Ally,Jordan,,,13:00,14:52,15:03,16:52
+MPW_I09,sample,1,2026-10-01,I,lagoon,8,21.650723,-158.062975,2.1,Ally,8:41,30,11:43,26.44,8.08,-59.1,97.6,6.43,33.42,1000,,,,,,,,flat in tidepool,,Ally,Jordan,,,13:00,14:52,15:03,16:52
+MPW_I10,sample,1,2026-10-01,I,lagoon,18,21.650920,-158.063053,1.3,Ally,8:57,120,11:49,26.714,8.09,-60.3,97.8,6.38,33.99,1000,,,,,,,,flat in tidepool,,Ally,Jordan,,,13:00,14:52,15:03,16:52
 MPW_O01,sample,1,2026-10-01,O,ocean,7,21.651014,-158.06254,91.9,Jordan,8:31,,11:30,26.485,8.11,-61.3,99.5,6.49,34.94,1000,,,,,,,,"1-2ft surf; clear skies,",,Ally,Jordan,Y,bag mixup resolved 2026-10-21: bottle O01 = water from waypoint O06 (ocean); location fields swapped,13:00,14:52,15:03,16:52
 MPW_O02,sample,1,2026-10-01,O,ocean,2,21.651093,-158.062518,87.8,Jordan,8:24,,10:41,26.476,8.14,-63,98.6,6.44,34.92,1000,,,,,,,,"1-2ft surf; clear skies,",,Ally,Jordan,Y,bag mixup resolved 2026-10-21: bottle O02 = water from waypoint O07 (ocean); location fields swapped,13:00,14:52,15:03,16:52
 MPW_O03,sample,1,2026-10-01,O,ocean,6,21.651112,-158.062441,77.5,Jordan,8:17,,10:36,26.636,8.13,-62,98.6,6.42,34.84,1000,,,,,,,,"1-2ft surf; clear skies,",,Ally,Jordan,Y,bag mixup resolved 2026-10-21: bottle O03 = water from waypoint O08 (ocean); location fields swapped,13:00,14:52,15:03,16:52
@@ -32,7 +32,7 @@ MPW_I19,sample,2,2026-10-02,I,lagoon,3,21.650701,-158.062789,1.6,Allie,7:29,80,9
 MPW_I20,sample,2,2026-10-02,I,lagoon,9,21.650983,-158.062795,21.1,Allie,7:19,75,9:56,26.675,8.11,-61.1,95.7,6.26,34.65,1000,,,,,,,,strong tide coming n,,Allie,Ashley,,,12:06,14:24,14:29,17:00
 MPW_O11,sample,2,2026-10-02,O,ocean,13,21.648909,-158.064224,90.5,Jordan,6:55,,9:27,26.132,8.12,-61.7,95.9,6.32,35,1000,,,,,,,,2-3ft; clear skies; moderate surface scum,match pH O12,Allie,Ashley,Y,"Sampled in bottle I11, swapped labels back in lab",12:06,14:24,14:29,17:00
 MPW_O12,sample,2,2026-10-02,O,ocean,10,21.649632,-158.064348,78,Jordan,7:01,,9:37,26.002,8.12,-61.7,96.8,6.38,34.98,1100,,,,,,,,2-3ft; clear skies; moderate surface scum,match pH O11,Allie,Ashley,Y,"Sampled in bottle I12, swapped labels back in lab",12:06,14:24,14:29,17:00
-MPW_O13,sample,2,2026-10-02,O,ocean,7,O169,,78,Jordan,7:04,,9:40,25.878,7.99,-53.9,96.4,6.36,34.97,1000,,,,,,,,2-3ft; clear skies; moderate surface scum,,Allie,Ashley,Y,"Sampled in bottle I13, swapped labels back in lab",12:06,14:24,14:29,17:00
+MPW_O13,sample,2,2026-10-02,O,ocean,7,21.650783,-158.064161,78,Jordan,7:04,,9:40,25.878,7.99,-53.9,96.4,6.36,34.97,1000,,,,,,,,2-3ft; clear skies; moderate surface scum,,Allie,Ashley,Y,"Sampled in bottle I13, swapped labels back in lab",12:06,14:24,14:29,17:00
 MPW_O14,sample,2,2026-10-02,O,ocean,8,21.651046,-158.063927,84.4,Jordan,7:08,,9:14,26.224,8.14,-62.9,97,6.39,35.03,1000,,,,,,,,2-3ft; clear skies; moderate surface scum,,Allie,Ashley,Y,"Sampled in bottle I14, swapped labels back in lab",12:06,14:24,14:29,17:00
 MPW_O15,sample,2,2026-10-02,O,ocean,14,21.65153,-158.063976,114.4,Jordan,7:13,,8:59,26.365,8.15,-63.6,97.6,6.41,35.09,1100,,,,,,,,2-3ft; clear skies; moderate surface scum,,Allie,Ashley,Y,"Sampled in bottle I15, swapped labels back in lab",12:06,14:24,14:29,17:00
 MPW_O16,sample,2,2026-10-02,O,cove,12,21.651831,-158.062931,100.5,Jordan,7:22,,8:12,26.485,8.1,-60.4,95,6.24,34.66,1200,,,,,,,,2-3ft; clear skies; moderate surface scum,,Allie,Ashley,,,12:06,14:24,14:29,17:00
@@ -40,7 +40,7 @@ MPW_O17,sample,2,2026-10-02,O,cove,4,21.651217,-158.062694,44.6,Jordan,7:25,,8:5
 MPW_O18,sample,2,2026-10-02,O,cove,1,21.651183,-158.062342,66,Jordan,7:28,,8:36,26.417,8.08,-59.5,94.2,6.19,34.57,1300,,,,,,,,2-3ft; clear skies; moderate surface scum,,Allie,Ashley,,,12:06,14:24,14:29,17:00
 MPW_O19,sample,2,2026-10-02,O,cove,19,21.651035,-158.062447,46.4,Jordan,7:32,,8:33,26.464,8.07,-58.5,94.4,6.2,34.69,1000,,,,,,,,2-3ft; clear skies; moderate surface scum,,Allie,Ashley,,,12:06,14:24,14:29,17:00
 MPW_O20,sample,2,2026-10-02,O,cove,22,21.650999,-158.062558,37,Jordan,7:38,,8:16,26.632,8.07,-61.9,96.8,6.34,34.78,1000,,,,,,,,2-3ft; clear skies; moderate surface scum,pH written 6.34 (same as DO) assuming it is close to others at 8.07,Allie,Ashley,,,12:06,14:24,14:29,17:00
-MPW_BLK2,blank,2,2026-10-02,BLK,blank,17,O70,,,Jordan,7:12,,10:53,26.361,8.12,-61.5,98.2,6.43,34.92,,,,,,,,,,,Allie,Ashley,,,12:06,14:24,14:29,17:00
+MPW_BLK2,blank,2,2026-10-02,BLK,blank,17,21.651576,-158.064040,,Jordan,7:12,,10:53,26.361,8.12,-61.5,98.2,6.43,34.92,,,,,,,,,,,Allie,Ashley,,,12:06,14:24,14:29,17:00
 MPW_I21,sample,3,2026-10-03,I,lagoon,15,21.649991,-158.063104,2.4,Mia/Kristen/Alyssa,6:32,95,9:34,26.03,8.11,-61.7,100.1,6.62,35.08,1000,,,,,,,,sun,,Mia/Alyssa/Kristen,Olivia,,,11:13,14:07,14:11,17:13
 MPW_I22,sample,3,2026-10-03,I,lagoon,8,21.650081,-158.063324,0.6,Mia/Kristen/Alyssa,6:36,20,9:26,26.13,8.11,-61.7,96.2,6.35,35.09,1000,,,,,,,,sun,,Mia/Alyssa/Kristen,Olivia,,,11:13,14:07,14:11,17:13
 MPW_I23,sample,3,2026-10-03,I,lagoon,7,21.650123,-158.06348,15.4,Mia/Kristen/Alyssa,6:40,95,9:29,26.04,8.11,-61.7,99.3,6.56,35.14,1000,,,,,,,,sun,,Mia/Alyssa/Kristen,Olivia,,,11:13,14:07,14:11,17:13
@@ -51,17 +51,17 @@ MPW_I27,sample,3,2026-10-03,I,lagoon,11,21.650466,-158.062938,11.8,Mia/Kristen/A
 MPW_I28,sample,3,2026-10-03,I,lagoon,2,21.650511,-158.062793,3.3,Mia/Kristen/Alyssa,7:07,100,10:48,25.9,8.09,-60,100.1,6.62,34.91,1000,,,,,,,,sun,,Mia/Alyssa/Kristen,Olivia,,,11:13,14:07,14:11,17:13
 MPW_I29,sample,3,2026-10-03,I,lagoon,18,21.650597,-158.063299,21.2,Mia/Kristen/Alyssa,7:14,145,10:36,25.8,8.06,-58.5,96,6.36,34.64,1050,,,,,,,,sun,,Mia/Alyssa/Kristen,Olivia,,,11:13,14:07,14:11,17:13
 MPW_I30,sample,3,2026-10-03,I,lagoon,13,21.650615,-158.062753,0,Mia/Kristen/Alyssa,7:21,65,10:18,25.66,8.1,-61,98.7,6.55,34.92,1025,,,,,,,,sun,,Mia/Alyssa/Kristen,Olivia,,,11:13,14:07,14:11,17:13
-MPW_O21,sample,3,2026-10-03,O,ocean,20,O172,,80.6,Olivia/Will,7:14,,10:05,26.02,8.12,-62.4,96.5,6.38,35,1000,,,,,,,,,,Mia/Alyssa/Kristen,Olivia,,,11:13,14:07,14:11,17:13
+MPW_O21,sample,3,2026-10-03,O,ocean,20,21.648985,-158.064130,80.6,Olivia/Will,7:14,,10:05,26.02,8.12,-62.4,96.5,6.38,35,1000,,,,,,,,,,Mia/Alyssa/Kristen,Olivia,,,11:13,14:07,14:11,17:13
 MPW_O22,sample,3,2026-10-03,O,ocean,17,21.649357,-158.064235,66.6,Olivia/Will,7:17,,10:09,26,8.12,-61.9,98,6.47,35,1050,,,,,,,,,dropped filter,Mia/Alyssa/Kristen,Olivia,,,11:13,14:07,14:11,17:13
 MPW_O23,sample,3,2026-10-03,O,ocean,10,21.649399,-158.064191,61.2,Olivia/Will,7:21,,9:14,26.28,8.13,-62.5,96.2,6.35,35.12,1025,,,,,,,,,,Mia/Alyssa/Kristen,Olivia,,,11:13,14:07,14:11,17:13
 MPW_O24,sample,3,2026-10-03,O,ocean,6,21.649652,-158.064357,79.4,Olivia/Will,7:24,,8:57,26.47,8.12,-61.9,99,6.49,35.24,1050,,,,,,,,,,Mia/Alyssa/Kristen,Olivia,,,11:13,14:07,14:11,17:13
 MPW_O25,sample,3,2026-10-03,O,ocean,12,21.650384,-158.064364,99.7,Olivia/Will,7:31,500,9:20,26.11,8.13,-63,96.2,6.35,35.23,1075,,,,,,,,,,Mia/Alyssa/Kristen,Olivia,,,11:13,14:07,14:11,17:13
-MPW_O26,sample,3,2026-10-03,O,cove,5,O174,,99.8,Olivia/Will,7:47,,9:05,26.08,8.1,-60.9,99,6.49,34.96,1000,,,,,,,,,,Mia/Alyssa/Kristen,Olivia,,,11:13,14:07,14:11,17:13
-MPW_O27,sample,3,2026-10-03,O,cove,22,O175,,95.7,Olivia/Will,7:50,400,9:09,26.22,8.08,-60,96.2,6.35,34.68,1000,,,,,,,,,,Mia/Alyssa/Kristen,Olivia,,,11:13,14:07,14:11,17:13
+MPW_O26,sample,3,2026-10-03,O,cove,5,21.651759,-158.062869,99.8,Olivia/Will,7:47,,9:05,26.08,8.1,-60.9,99,6.49,34.96,1000,,,,,,,,,,Mia/Alyssa/Kristen,Olivia,,,11:13,14:07,14:11,17:13
+MPW_O27,sample,3,2026-10-03,O,cove,22,21.651715,-158.062498,95.7,Olivia/Will,7:50,400,9:09,26.22,8.08,-60,96.2,6.35,34.68,1000,,,,,,,,,,Mia/Alyssa/Kristen,Olivia,,,11:13,14:07,14:11,17:13
 MPW_O28,sample,3,2026-10-03,O,cove,1,21.651551,-158.062153,109.9,Olivia/Will,7:57,,9:39,25.97,8.11,-61.7,96.4,6.41,34.48,1000,,,,,,,,,,Mia/Alyssa/Kristen,Olivia,,,11:13,14:07,14:11,17:13
 MPW_O29,sample,3,2026-10-03,O,cove,21,21.651406,-158.062636,65.4,Olivia/Will,8:02,,9:50,26.07,8.04,-57.3,96.2,6.36,34.54,1000,,,,,,,,,,Mia/Alyssa/Kristen,Olivia,,,11:13,14:07,14:11,17:13
 MPW_O30,sample,3,2026-10-03,O,cove,4,21.651091,-158.062364,56.6,Olivia/Will,8:05,200,9:46,26.19,8.13,-62.4,100.9,6.65,34.86,1000,,,,,,,,,,Mia/Alyssa/Kristen,Olivia,Y,garmind died but close to point,11:13,14:07,14:11,17:13
-MPW_BLK3,blank,3,2026-10-03,BLK,blank,14,O173,,,Olivia/Will,7:25,,11:00,25.65,8.11,-61.6,74.9,4.98,35.12,,,,,,,,,,DO low ,Mia/Alyssa/Kristen,Olivia,,,11:13,14:07,14:11,17:13
+MPW_BLK3,blank,3,2026-10-03,BLK,blank,14,21.650767,-158.064643,,Olivia/Will,7:25,,11:00,25.65,8.11,-61.6,74.9,4.98,35.12,,,,,,,,,,DO low ,Mia/Alyssa/Kristen,Olivia,,,11:13,14:07,14:11,17:13
 MPW_I31,sample,4,2026-10-04,I,lagoon,17,21.649408,-158.063586,5.4,Maya/Jared,6:53,128,8:59,25.106,7.95,-52.3,70.2,4.75,32.07,1000,,,,,,,,"1-2ft, low wind, clear sky partly cloudy/sun",I32 match,Kristen,Jordan,,,10:09,12:31,12:34,15:09
 MPW_I32,sample,4,2026-10-04,I,lagoon,22,21.649782,-158.063197,0,Maya/Jared,7:00,78,8:55,25.3,7.97,-53.3,70.2,4.75,33.12,1050,,,,,,,,"1-2ft, low wind, clear sky partly cloudy/sun",I31 match,Kristen,Jordan,,,10:09,12:31,12:34,15:09
 MPW_I33,sample,4,2026-10-04,I,lagoon,12,21.650137,-158.063134,11.8,Maya/Jared,7:04,83,8:45,25.29,8,-55.2,82.5,5.55,34.06,1000,,,,,,,,"1-2ft, low wind, clear sky partly cloudy/sun",!33-I35 match DO,Kristen,Jordan,,,10:09,12:31,12:34,15:09
