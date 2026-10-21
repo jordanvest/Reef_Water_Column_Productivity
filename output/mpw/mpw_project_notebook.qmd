@@ -1,0 +1,251 @@
+---
+title: "MPW Tidepool Water Column Metabolism"
+subtitle: "Project notebook: field notes, respirometry processing, QC and early results"
+author: "Jordan Vest"
+date: today
+format:
+  html:
+    code-fold: true
+    code-summary: "Show code"
+    code-tools: true
+    toc: true
+    toc-depth: 3
+    toc-location: left
+    theme: cosmo
+    embed-resources: true
+execute:
+  warning: false
+  message: false
+---
+
+<!-- HOW TO USE THIS NOTEBOOK
+1. Run scripts/respirometry/respo_rates_plots.R first (it makes processed/mpw_PnR_rates.csv).
+2. Click Render. 
+3. Notes about one sample   -> "notes" / "exclude" columns in data/respirometry/mpw/mpw_respo_meta.csv
+   Notes about the project -> the Change log at the bottom of this file (one dated line per work session).
+-->
+
+```{r}
+#| label: setup
+library(tidyverse)
+library(here)
+library(knitr)
+
+# ---- load everything this notebook uses (all made by the scripts, nothing is calculated from raw files here) ----
+SampleMeta <- read_csv(here("data", "mpw_sample_meta.csv"))                          # one row per sample: field + lab data
+RespoMeta  <- read_csv(here("data", "respirometry", "mpw", "mpw_respo_meta.csv"))    # respo times, notes, exclude
+RespoR_PR  <- read_csv(here("data", "respirometry", "mpw", "processed", "mpw_PnR_rates.csv")) # rates from respo_rates_plots.R
+
+# samples left out of results = anything with text in the "exclude" column
+excluded <- RespoMeta %>% filter(!is.na(exclude)) %>% distinct(sample_ID, exclude)
+
+# which instrument each chamber channel belongs to
+device_of <- function(ch) case_when(ch %in% 1:4   ~ "Oxy-4 #087 (ch 1-4)",
+                                    ch %in% 5:8   ~ "Oxy-4 #082 (ch 5-8)",
+                                    ch %in% 9:12  ~ "Oxy-4 #100 (ch 9-12)",
+                                    ch %in% 13:22 ~ "Oxy-10 (ch 13-22)")
+```
+
+## 1. Overview
+
+**Question:** How does water column metabolism (respiration and photosynthesis of the plankton community) change across a groundwater gradient at the Kapo'o tidepool at Shark's Cove?
+
+**Site:** Kapo'o tidepool, North Shore of Oʻahu. The tidepool is shallow and lagoon-like (max ~4 ft deep). It receives submarine groundwater discharge (SGD) linked to the beach restroom, which is likely carrying sewage. Samples were also taken outside the pool in the adjacent cove and ocean.
+
+**Design:** 6 sampling days (Oct 1–6, 2026). Each day at dawn, one sampler collected 10 samples inside the pool and one collected 10 outside (5 cove, 5 ocean), plus one blank. Each sample was split into subsamples for respirometry, chl-a, nutrients, fDOM, flow cytometry (FCM) and total alkalinity (TA).
+
+**Respirometry:** PreSens Oxy-4 (×3) and Oxy-10, 473 mL chambers
+
+Collaborator: Mālama Pūpūkea-Waimea (MPW)
+Field Team: ...
+
+## 2. Field collection
+
+```{r}
+#| label: sample-counts
+SampleMeta %>%
+  count(day, date, habitat) %>%
+  pivot_wider(names_from = habitat, values_from = n, values_fill = 0) %>%
+  mutate(total = lagoon + cove + ocean + blank) %>%
+  kable(caption = "Samples collected per day and habitat")
+```
+
+- 115 samples + 5 blanks. Day 6: ocean samples skipped (waves too big to paddle out).
+- From Day 2 the ocean zone was moved farther from the rock wall for safety; Day 1 points kept as collected.
+
+## 3. Data inventory
+
+```{r}
+#| label: data-status
+tribble(
+  ~measurement,     ~status,                         ~where,
+  "Respirometry",   "Processed D1–D6; QC in progress", "data/respirometry/mpw/",
+  "Field (Orion)",  "Entered",                       "data/mpw_sample_meta.csv",
+  "Chl-a",          "Pending",                       "-",
+  "Nutrients",      "Pending",                       "-",
+  "fDOM",           "Pending (collaborator)",        "-",
+  "FCM",            "Pending",                       "-",
+  "TA",             "Pending",                       "-",
+  "Tide height",    "Not yet added",                 "tide_ft column is empty"
+) %>% kable(caption = "Status of each dataset (edit as things change)")
+```
+
+**Timeline:** *(paste Notion Gantt screenshot here, e.g. `![](gantt.png)`)*
+
+## 4. Respirometry processing
+
+Rates are calculated in two steps:
+
+1. `scripts/respirometry/respo_LoLinR.R`: run **once per sample day**. Cuts each raw O₂ file to its dark and light windows (from `mpw_respo_meta.csv`), drops the acclimation period, thins the data, and fits LoLinR local regressions (Olito et al. 2017). Saves `processed/mpw_RespoR_D#.csv` and diagnostic PDFs in `output/mpw/respirometry/D#/`. Slow if long day and thinned to every 10th row.
+2. `scripts/respirometry/respo_rates_plots.R`: converts slopes to µmol O₂ hr⁻¹ using chamber volume, calculates respiration, net and gross photosynthesis, and makes plots.
+
+```{r}
+#| label: settings-table
+tribble(
+  ~day, ~thin_n, ~acclim_sec, ~note,
+  "D1", 10, 1800, "",
+  "D2", 10, 1800, "",
+  "D3", 20, 1800, "rerun 10/21 (session closed before saving), thinned to every 20th",
+  "D4", 10, 1800, "",
+  "D5", 20, 1800,    "merged export from problematic run;long run so thinned every 20th",
+  "D6", 20, 1800, "rerun 10/21 (session closed before saving), thinned to every 20th",
+) %>% kable(caption = "Processing settings per day. thin_n = keep every Nth row; acclim_sec = seconds dropped at the start of each phase")
+```
+
+::: {.callout-note}
+Days were processed with different thinning (every 10th vs 20th row). A test on D5 showed slopes barely change between the two, but before publishing, all days should be rerun with the same settings.
+:::
+
+```{r}
+#| label: loop-key-lines
+#| eval: false
+#| code-fold: show
+# the key lines inside the loop in respo_LoLinR.R (shown, not run)
+data <- Respo.Data1 %>%
+  filter(Time >= start_time & Time <= stop_time) %>%   # dark or light window from metadata
+  arrange(Time) %>%
+  mutate(t_sec = as.numeric(difftime(Time, first(Time), units = "secs"))) %>%
+  filter(t_sec > acclim_sec) %>%                        # drop acclimation period
+  filter(row_number() %% thin_n == 0)                   # thin the data
+
+rankLocReg(xall = data$t_sec, yall = data$Value, alpha = 0.2, method = "pc")  # LoLinR fit
+```
+
+## 5. Quality control
+
+**Rule for now:** a sample is excluded if O₂ *rises* in the dark (respiration < 0), which is not biologically possible. Additionally if the probe clearly failed (bad calibration D1). Excluded samples are marked in the `exclude` column of `mpw_respo_meta.csv` and will be revisited.
+
+```{r}
+#| label: exclusion-counts
+excluded %>% count(exclude, name = "samples") %>%
+  kable(caption = "Samples excluded so far, by reason")
+```
+
+### Failures by instrument
+
+```{r}
+#| label: failures-by-device
+resp <- RespoR_PR %>%
+  filter(PR == "Respiration", !str_detect(sample_ID, "BLK")) %>%
+  mutate(R_up = Values < 0,
+         device = device_of(chamber_channel))
+
+resp %>%
+  group_by(device) %>%
+  summarise(samples = n(), n_R_up = sum(R_up), percent = round(100 * mean(R_up))) %>%
+  kable(caption = "Samples where O2 rose in the dark, by instrument (blanks not included)")
+```
+
+```{r}
+#| label: failures-by-chamber
+#| fig-height: 3.5
+resp %>%
+  group_by(chamber_channel, device) %>%
+  summarise(percent_R_up = 100 * mean(R_up), n = n(), .groups = "drop") %>%
+  ggplot(aes(x = factor(chamber_channel), y = percent_R_up, fill = device)) +
+  geom_col() +
+  labs(x = "Chamber channel", y = "% of runs with O2 rising in the dark", fill = NULL) +
+  theme_bw() +
+  theme(legend.position = "bottom")
+```
+
+**What this shows:** 34 of the 48 sample failures were on the Oxy-10 (channels 13–22), plus all 4 working blanks, which were also on the Oxy-10 (52 "R up" in total). It reads high in both phases: the median dark slope on the Oxy-10 is about +0.13 µmol L⁻¹ h⁻¹ versus about −0.2 on the Oxy-4s. Every blank was on the Oxy-10, and all of them rose in the dark (BLK1's probe failed outright). The Oxy-4 failures were mostly runs where the chamber cooled slightly during the dark phase.
+
+```{r}
+#| label: blanks
+RespoR_PR %>%
+  filter(str_detect(sample_ID, "BLK")) %>%
+  select(run_block, sample_ID, chamber_channel, PR, Values) %>%
+  pivot_wider(names_from = PR, values_from = Values) %>%
+  mutate(across(where(is.double), ~ signif(.x, 3))) %>%
+  kable(caption = "Blanks (umol O2/hr). All on the Oxy-10; BLK1 = probe failure")
+```
+
+## 6. Results so far
+
+::: {.callout-warning}
+Preliminary. Excluded samples are removed, rates are **not** blank-corrected, and most remaining data come from the Oxy-4s (see QC).
+:::
+
+```{r}
+#| label: plot-data
+sgd_cutoff_m <- 10   # lagoon samples closer than this to the SGD = "near_SGD", the rest = "T"
+
+plot_data <- RespoR_PR %>%
+  left_join(SampleMeta %>% select(sample_ID, habitat, dist_to_sgd_m, time_collected), by = "sample_ID") %>%
+  filter(habitat != "blank") %>%
+  filter(!sample_ID %in% excluded$sample_ID) %>%
+  mutate(habitat_sgd = case_when(habitat == "lagoon" & dist_to_sgd_m <  sgd_cutoff_m ~ "near_SGD",
+                                 habitat == "lagoon" & dist_to_sgd_m >= sgd_cutoff_m ~ "T",
+                                 habitat == "cove"  ~ "C",
+                                 habitat == "ocean" ~ "O"),
+         habitat_sgd = factor(habitat_sgd, levels = c("near_SGD", "T", "C", "O")),
+         PR = factor(PR, levels = c("Respiration", "NetPhoto", "GrossPhoto"),
+                     labels = c("Respiration", "Net photosynthesis", "Gross photosynthesis")))
+```
+
+### By habitat and distance to SGD
+
+```{r}
+#| label: pr-by-habitat
+#| fig-height: 4
+#| fig-width: 9
+plot_data %>%
+  ggplot(aes(x = habitat_sgd, y = Values)) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey60") +
+  geom_boxplot(outlier.shape = NA, width = 0.5) +
+  geom_jitter(aes(color = run_block), width = 0.12, alpha = 0.8, size = 2) +
+  facet_wrap(~PR, nrow = 1) +
+  theme_bw(base_size = 12) +
+  labs(x = paste0("near_SGD = tidepool < ", sgd_cutoff_m, " m from SGD, T = rest of tidepool, C = cove, O = ocean"),
+       y = expression(paste(mu, "mol O"[2], " hr"^-1)), color = "Day") +
+  theme(strip.background = element_rect(fill = "white"), strip.text = element_text(face = "bold"))
+```
+
+### By day
+
+*To do.*
+
+### By tide
+
+*To do. Needs tide height added to `mpw_sample_meta.csv` (`tide_ft` is empty).*
+
+### By time of day
+
+*To do (`time_collected` is filled in).*
+
+## 7. Questions for advisor / lab
+
+1. **Oxy-10 drift:** 71% of Oxy-10 sample runs (34 of 48) show O₂ rising in the dark, and so do all the blanks. Is this a known issue with this unit (calibration, sensor spots, temperature compensation)? Can the blanks be used to correct it instead of excluding 34 samples?
+2. **Negative net photosynthesis:** could be real net heterotrophy near the sewage input rather than an error. Exclude only when gross P < 0 or the trace shows an artifact?
+3. **Variables to test:** Day, tide and time of day move together. Which driver can this design actually test?
+4. **Blank correction and units:** subtract the blank per day? Report per litre and, once chl-a is done, per chl-a?
+5. **Consistent processing:** rerun all days at every 20th row?
+
+## Change log
+
+*One dated line per work session: what was done and why.*
+
+- 2026-10-18: Adapted the respo script for MPW; run one day at a time. D1 run.
+- 2026-10-20: D1–D4, D6 run. D5 hung (very long light phase): added `acclim_sec` and `thin_n` settings; D5 run with 0 and 20.
+- 2026-10-21: D3 and D6 rerun at every 20th row (session closed before saving). Found that most dark-phase failures are on the Oxy-10. Added `exclude` column to `mpw_respo_meta.csv` (52 "R up" + BLK1 probe failure). Split the script into `respo_LoLinR.R` and `respo_rates_plots.R`. Started this notebook.

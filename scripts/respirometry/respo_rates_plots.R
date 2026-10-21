@@ -1,23 +1,20 @@
 ###### Respo Code for Seawater Samples - SCRIPT 2 of 2: rates, QC and plots #######
 ### Created by: Nyssa Silbiger
-#### Adapted for seawater on: 2026-06-25 by Jordan Vest & Maya Powell for MPW Project
+#### Adapted for seawater on: 2026-06-25 by Jordan Vest & Maya Powell for initial MPW Project. Adapted further by Jordan Vest for OCtober MPW
 ## Split from respo_seawater2.2.R on 2026-10-21
-## Reads the mpw_RespoR_D#.csv files made by 01_respo_LoLinR_by_day.R (no LoLinR here, so it runs in seconds)
-## Run top to bottom any time - it includes every day you've run so far
+## Reads the mpw_RespoR_D#.csv files made by the script "respo_LolinR.R"
 
 library(tidyverse)
 library(lubridate)
 library(here)
 
-RespoMeta <- read_csv(here("data","respirometry","mpw", "mpw_respo_meta.csv")) # metadata incl. notes and exclude columns
+RespoMeta <- read_csv(here("data","respirometry","mpw", "mpw_respo_meta.csv"))
 
 ######### Calculate Respiration rate ###############
 ############################################
-# MPW: this section stacks every day you've run so far (all mpw_RespoR_D*.csv files)
-# so you can run it after any day and it will include all finished days
 
 RespoR <- list.files(here("data","respirometry","mpw","processed"),
-                     pattern = "^mpw_RespoR_D[0-9]\\.csv$", full.names = TRUE) %>%
+                     pattern = "^mpw_RespoR_D[0-6]\\.csv$", full.names = TRUE) %>%
   map_dfr(read_csv)
 Sample_Info <- read_csv(here("data","respirometry","mpw","sample_info_mpw.csv"))
 
@@ -31,7 +28,7 @@ RespoR2 <- RespoR %>%
   mutate(umol.hr = umol.sec*3600) %>% #convert to units per hour
   #mutate(umol.chla.hr = umol.hr/chla) %>% #convert to final units using chla concentrations 
   dplyr::select(date, sample_ID, site_ID, light_dark, run_block, umol.hr, chamber_channel,
-              Temp.C) # MPW: removed chamber_type (all chambers the same)
+              Temp.C)
 ######@JORDAN DO THIS LATER!!!!##### CHLA CONVERSION ABOVE!!!!
 
 write_csv(RespoR2 , here("data","respirometry","mpw","processed","mpw_RespoR2_AllRates.csv"))  
@@ -50,7 +47,7 @@ write_csv(RespoR_PR,here("data","respirometry","mpw","processed","mpw_PnR_rates.
 RespoR_PR <- read_csv(here("data","respirometry","mpw","processed","mpw_PnR_rates.csv"))
 
 #### MPW QC: samples to look at first ####
-# O2 going UP in the dark (negative respiration) = probe/bubble/leak problem, not biology
+# O2 going UP in the dark (negative respiration) = probe/bubble/leak problem
 qc_dark_up <- RespoR_PR %>% 
   filter(PR == "Respiration", Values < 0) %>% 
   left_join(RespoMeta %>% filter(light_dark == "DARK") %>% dplyr::select(sample_ID, notes)) %>% 
@@ -65,7 +62,7 @@ sgd_cutoff_m <- 10   # MPW: lagoon samples closer than this to the SGD = "near_S
 # (dist_to_sgd_m is from the PLANNED points for now - rerun after GPS update)
 
 # MPW: samples to leave out = anything with text in the "exclude" column of mpw_respo_meta.csv
-# to bring a sample back, delete its exclude text in the csv. qc_dark_up above is just for finding NEW problems.
+# to bring a sample back, delete its exclude text in the csv. 
 excluded <- RespoMeta %>% filter(!is.na(exclude)) %>% distinct(sample_ID, exclude)
 
 plot_data <- RespoR_PR %>% 
