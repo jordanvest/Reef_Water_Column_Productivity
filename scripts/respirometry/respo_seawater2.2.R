@@ -47,9 +47,9 @@ library(dplyr)
 
 #set the path to all of the raw oxygen datasheets
 ## these are saved onto the computer in whatever file path/naming scheme you saved things to 
-day <- "D4"   # MPW: change this ONE line to D1, D2 ... D6 and run the script top to bottom, one day at a time
+day <- "D5"   # MPW: change this ONE line to D1, D2 ... D6 and run the script top to bottom, one day at a time
 acclim_sec <- 1800   # MPW: seconds dropped from the start of each phase (30 min). D5: set to 0, its start/stop times are already past acclimation
-thin_n     <- 10     # MPW: keep every Nth row. D5: set to 20 - its light phase is ~3.5 h and LoLinR slows down a LOT with more points
+thin_n     <- 20     # MPW: keep every Nth row. D5: set to 20 - its light phase is ~3.5 h and LoLinR slows down a LOT with more points
 path.p<-here("data","respirometry","mpw", "rawo2", day) #the location of all your respirometry files
 #use this to check file path is good before running script
 #print(path.p)
