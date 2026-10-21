@@ -83,10 +83,10 @@ tribble(
   "Field (Orion)",  "Entered",                       "data/mpw_sample_meta.csv",
   "Chl-a",          "Pending",                       "-",
   "Nutrients",      "Pending",                       "-",
-  "fDOM",           "Pending (collaborator)",        "-",
+  "fDOM",           "Pending",                       "-",
   "FCM",            "Pending",                       "-",
   "TA",             "Pending",                       "-",
-  "Tide height",    "Not yet added",                 "tide_ft column is empty"
+  "Tide height",    "Entered",                 "data/mpw_tides"
 ) %>% kable(caption = "Status of each dataset (edit as things change)")
 ```
 
@@ -204,7 +204,7 @@ plot_data <- RespoR_PR %>%
                      labels = c("Respiration", "Net photosynthesis", "Gross photosynthesis")))
 ```
 
-### By habitat and distance to SGD
+### Rates by habitat
 
 ```{r}
 #| label: pr-by-habitat
@@ -222,7 +222,6 @@ plot_data %>%
   theme(strip.background = element_rect(fill = "white"), strip.text = element_text(face = "bold"))
 ```
 
-### By habitat
 ```{r}
 #| label: median-rates-by-habitat
 # one row per sample, with respiration, net and gross photosynthesis as columns
@@ -241,12 +240,6 @@ rates_wide %>%
             across(c(Respiration, NetPhoto, GrossPhoto),
                    ~ sprintf("%.2f (%.2f to %.2f)", median(.x), quantile(.x, 0.25), quantile(.x, 0.75)))) %>%
   kable(caption = "Median rate (interquartile range) by habitat, umol O2/hr. Excluded samples removed.")
-
-# is the lagoon different from outside (cove + ocean)? Wilcoxon test, no assumption of normal data
-tibble(rate = c("Respiration", "NetPhoto", "GrossPhoto")) %>%
-  mutate(p_value = map_dbl(rate, ~ wilcox.test(rates_wide[[.x]] ~ (rates_wide$habitat == "lagoon"))$p.value),
-         p_value = signif(p_value, 2)) %>%
-  kable(caption = "Lagoon vs outside (Wilcoxon test)")
 ```
 
 ### Rates vs measured salinity (lagoon)
@@ -274,9 +267,69 @@ rates_wide %>%
   theme(strip.background = element_rect(fill = "white"), strip.text = element_text(face = "bold"),
         panel.grid.minor = element_blank())
 ```
+
+### Groundwater fingerprint in the field data
+
+Uses the field readings from **all 115 samples** (no respirometry exclusions). Groundwater is fresher, and here it also comes with lower pH and lower oxygen.
+
+```{r}
+#| label: groundwater-fingerprint
+#| fig-height: 4
+#| fig-width: 9
+SampleMeta %>%
+  filter(sample_type == "sample", !is.na(salinity)) %>%
+  mutate(habitat = factor(habitat, levels = c("lagoon", "cove", "ocean"))) %>%
+  pivot_longer(c(pH, DO_pct), names_to = "variable", values_to = "value") %>%
+  mutate(variable = recode(variable, pH = "pH", DO_pct = "Dissolved oxygen (% sat)")) %>%
+  ggplot(aes(x = salinity, y = value, color = habitat)) +
+  geom_point(size = 2.2, alpha = 0.8) +
+  facet_wrap(~variable, scales = "free_y") +
+  scale_x_reverse() +                                   # fresher water on the right
+  scale_color_manual(values = c(lagoon = "#D55E00", cove = "#0072B2", ocean = "#009E73")) +
+  theme_bw(base_size = 12) +
+  labs(x = "Salinity (fresher water to the right)", y = NULL, color = "Habitat") +
+  theme(strip.background = element_rect(fill = "white"), strip.text = element_text(face = "bold"),
+        panel.grid.minor = element_blank())
 ```
 
+### Wave dats v still
 
+Split by median lagoon salinity was below 34.5. If the lagoon responds on groundwater days but the outside water does not, that points toward groundwater rather than the pool itself.
+
+```{r}
+#| label: groundwater-days
+#| fig-height: 4
+#| fig-width: 10
+gw_days <- SampleMeta %>%
+  filter(habitat == "lagoon") %>%
+  group_by(day) %>%
+  summarise(lagoon_salinity = median(salinity, na.rm = TRUE)) %>%
+  filter(lagoon_salinity < 34.5) %>%
+  pull(day)
+gw_days   # which days counted as groundwater days
+
+rates_wide %>%
+  mutate(where = if_else(habitat == "lagoon", "Lagoon", "Outside (cove + ocean)"),
+         day_type = if_else(day %in% gw_days, "Fresher", "Saltier")) %>%
+  pivot_longer(c(Respiration, NetPhoto, GrossPhoto), names_to = "PR", values_to = "Values") %>%
+  mutate(PR = factor(PR, levels = c("Respiration", "NetPhoto", "GrossPhoto"),
+                     labels = c("Respiration", "Net photosynthesis", "Gross photosynthesis"))) %>%
+  ggplot(aes(x = where, y = Values, fill = day_type)) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey60") +
+  geom_boxplot(outlier.shape = NA, width = 0.6, position = position_dodge(0.7)) +
+  geom_point(position = position_jitterdodge(jitter.width = 0.12, dodge.width = 0.7), alpha = 0.6, size = 1.5) +
+  facet_wrap(~PR, nrow = 1) +
+  scale_fill_manual(values = c("Fresher" = "#E69F00", "Saltier" = "grey85")) +
+  coord_cartesian(ylim = c(-0.4, 0.8)) +                  # zoom in; a few extreme points are off the top/bottom
+  theme_bw(base_size = 12) +
+  labs(x = NULL, y = expression(paste(mu, "mol O"[2], " hr"^-1)), fill = NULL) +
+  theme(strip.background = element_rect(fill = "white"), strip.text = element_text(face = "bold"),
+        legend.position = "bottom", panel.grid.minor = element_blank())
+```
+
+### Why were some days fresher?
+
+Groundwater signal showed up on Days 1, 4 and 5 but not 2, 3 and 6, and it did not follow the tide. Field notes point to **waves**: small surf on fresh days, bigger surf on salty days. Wave overwash pushes seawater into the pool and flushes out the groundwater. *To test: Waimea Bay wave buoy and nearby rain gauge, ~Sept 28–Oct 6.*
 
 ### By day
 
@@ -284,19 +337,21 @@ rates_wide %>%
 
 ### By tide
 
-*To do. Needs tide height added to `mpw_sample_meta.csv` (`tide_ft` is empty).*
+*To do. Tide heights are in `data/mpw_tides.csv`.*
 
 ### By time of day
 
 *To do (`time_collected` is filled in).*
 
-## 7. Questions for advisor / lab
 
-1. **Oxy-10 drift:** 71% of Oxy-10 sample runs (34 of 48) show O₂ rising in the dark, and so do all the blanks. Is this a known issue with this unit (calibration, sensor spots, temperature compensation)? Can the blanks be used to correct it instead of excluding 34 samples?
-2. **Negative net photosynthesis:** could be real net heterotrophy near the sewage input rather than an error. Exclude only when gross P < 0 or the trace shows an artifact?
-3. **Variables to test:** Day, tide and time of day move together. Which driver can this design actually test?
+## 7. Questions
+
+1. **Oxy-10 drift:** 71% of Oxy-10 sample runs (34 of 48) show O₂ rising in the dark, and so do all the blanks. Known issue with this unit? Correct with the blanks, or treat as lost and fix the instrument before the next run?
+2. **Subsamples:** nutrients and chl-a first, fDOM through the collaborator, FCM and TA as a subset? What can the lab afford?
+3. **Negative net photosynthesis:** keep unless the trace shows an artifact? The pilot suggests it may be real.
 4. **Blank correction and units:** subtract the blank per day? Report per litre and, once chl-a is done, per chl-a?
 5. **Consistent processing:** rerun all days at every 20th row?
+
 
 ## Change log
 
@@ -304,4 +359,4 @@ rates_wide %>%
 
 - 2026-10-18: Adapted the respo script for MPW; run one day at a time. D1 run.
 - 2026-10-20: D1–D4, D6 run. D5 hung (very long light phase): added `acclim_sec` and `thin_n` settings; D5 run with 0 and 20.
-- 2026-10-21: D3 and D6 rerun at every 20th row (session closed before saving). Found that most dark-phase failures are on the Oxy-10. Added `exclude` column to `mpw_respo_meta.csv` (52 "R up" + BLK1 probe failure). Split the script into `respo_LoLinR.R` and `respo_rates_plots.R`. Started this notebook.
+- 2026-10-21: D3 and D6 rerun at every 20th row (session closed before saving). Found that most dark-phase failures are on the Oxy-10. Added `exclude` column to `mpw_respo_meta.csv` (52 "R up" + BLK1 probe failure). Split the script into `respo_LoLinR.R` and `respo_rates_plots.R`. Filled real GPS coordinates for 16 samples. Recomputed distance to SGD for all samples (nearest SGD polygon or seep point, from `MPW_map.kmz`); every habitat now matches its zone on the map. Added tides file.
