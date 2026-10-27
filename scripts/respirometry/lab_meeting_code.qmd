@@ -1,0 +1,440 @@
+---
+title: "Lab meeting figures: code"
+format:
+  html:
+    code-fold: true
+    code-summary: "Show code"
+    toc: true
+    embed-resources: true
+execute:
+  warning: false
+  message: false
+---
+
+Code for the data slides only. Everything reads the files made by `respo_LoLinR.R` and `respo_rates_plots.R`; nothing here re-runs LoLinR.
+
+## Setup
+
+```{r}
+#| label: setup
+library(tidyverse)
+library(here)
+library(knitr)
+library(patchwork)
+
+SampleMeta <- read_csv(here("data", "mpw_sample_meta.csv"))                                   # one row per sample: field data
+RespoMeta  <- read_csv(here("data", "respirometry", "mpw", "mpw_respo_meta.csv"))             # respo times, notes, exclude
+RespoR_PR  <- read_csv(here("data", "respirometry", "mpw", "processed", "mpw_PnR_rates.csv")) # rates from respo_rates_plots.R
+
+# samples left out = anything with text in the "exclude" column (O2 rose in the dark, or probe failure)
+excluded <- RespoMeta %>% filter(!is.na(exclude)) %>% distinct(sample_ID, exclude)
+
+# one row per kept sample, with Respiration, NetPhoto, GrossPhoto as columns + all field data
+rates_wide <- RespoR_PR %>%
+  filter(!sample_ID %in% excluded$sample_ID) %>%
+  select(sample_ID, PR, Values) %>%
+  pivot_wider(names_from = PR, values_from = Values) %>%
+  left_join(SampleMeta, by = "sample_ID") %>%
+  filter(habitat != "blank")
+
+# zones and colours used on slides 16-19
+zone_levels <- c("lagoon_south", "lagoon_north", "cove", "ocean")
+zone_colors <- c(lagoon_south = "#D55E00", lagoon_north = "#E69F00", cove = "#0072B2", ocean = "#009E73")
+zone_labels <- c(lagoon_south = "Lagoon S", lagoon_north = "Lagoon N", cove = "Cove", ocean = "Ocean")
+
+rates_wide <- rates_wide %>% mutate(zone = factor(subzone, levels = zone_levels))
+field <- SampleMeta %>%
+  filter(sample_type == "sample") %>%                         # all 115 samples (no respo exclusions)
+  mutate(zone = factor(subzone, levels = zone_levels),
+         lat = parse_number(as.character(planned_lat)),
+         lon = parse_number(as.character(planned_lon)))
+
+rate_labels <- function(df) {
+  df %>% mutate(PR = factor(PR, levels = c("Respiration", "NetPhoto", "GrossPhoto"),
+                            labels = c("Respiration", "Net photosynthesis", "Gross photosynthesis")))
+}
+```
+
+## Slide 12: all LoLinR diagnostic plots
+
+Run once by hand; takes about 30 s. Saves the images in `output/mpw/respirometry/`.
+
+```{r}
+#| label: lolinr-montage
+#| eval: false
+library(magick)   # install.packages(c("magick", "pdftools")) the first time
+respo_dir <- here("output", "mpw", "respirometry")
+
+make_montage <- function(pdf_files, out_file, columns) {
+  pages <- map(pdf_files, function(f) {
+    image_read_pdf(f, density = 40) %>%
+      image_annotate(str_remove(basename(f), "\\.pdf$"), size = 14, gravity = "north", boxcolor = "white")
+  })
+  image_join(pages) %>%
+    image_montage(tile = paste0(columns, "x"), geometry = "+2+2") %>%
+    image_write(out_file, format = "jpg", quality = 80)
+}
+
+all_files <- unlist(map(paste0("D", 1:6), ~ list.files(file.path(respo_dir, .x), pattern = "\\.pdf$", full.names = TRUE)))
+make_montage(all_files, file.path(respo_dir, "LoLinR_all_days.jpg"), columns = 16)
+```
+
+## Slides 13-14: one LoLinR diagnostic plot
+
+These are made inside the loop in `respo_LoLinR.R` (shown, not run here).
+
+```{r}
+#| label: lolinr-key-lines
+#| eval: false
+# 1. cut each raw O2 file to its dark or light window (start/stop times from mpw_respo_meta.csv)
+data <- Respo.Data1 %>%
+  filter(Time >= start_time & Time <= stop_time) %>%
+  arrange(Time) %>%
+  mutate(t_sec = as.numeric(difftime(Time, first(Time), units = "secs"))) %>%
+  filter(t_sec > acclim_sec) %>%                  # drop acclimation (1800 s = 30 min; D5 = 0)
+  filter(row_number() %% thin_n == 0)             # keep every 10th row (D1, D2, D4) or 20th (D3, D5, D6)
+
+# 2. LoLinR finds the most linear stretch of the O2 trace (Olito et al. 2017)
+fit <- rankLocReg(xall = data$t_sec, yall = data$Value, alpha = 0.2, method = "pc")
+
+# 3. the 6-panel diagnostic plot on slides 13-14
+plot(fit)
+
+# 4. slope (umol O2 / L / s) -> rate per chamber (umol O2 / hr), in respo_rates_plots.R
+umol.hr <- umol.L.sec * (volume_mL * 0.001) * 3600   # chamber volume 473 mL
+# Respiration = -(dark slope); Net photosynthesis = light slope; Gross photosynthesis = Net + Respiration
+```
+
+## Slide 15: rates by habitat and distance to SGD
+
+```{r}
+#| label: slide15-habitat
+#| fig-height: 4
+#| fig-width: 9
+sgd_cutoff_m <- 10   # lagoon samples closer than this to an SGD zone or seep = "near_SGD", the rest = "T"
+
+RespoR_PR %>%
+  left_join(SampleMeta %>% select(sample_ID, habitat, dist_to_sgd_m), by = "sample_ID") %>%
+  filter(habitat != "blank", !sample_ID %in% excluded$sample_ID) %>%
+  mutate(habitat_sgd = case_when(habitat == "lagoon" & dist_to_sgd_m <  sgd_cutoff_m ~ "near_SGD",
+                                 habitat == "lagoon" & dist_to_sgd_m >= sgd_cutoff_m ~ "T",
+                                 habitat == "cove"  ~ "C",
+                                 habitat == "ocean" ~ "O"),
+         habitat_sgd = factor(habitat_sgd, levels = c("near_SGD", "T", "C", "O"))) %>%
+  rate_labels() %>%
+  ggplot(aes(x = habitat_sgd, y = Values)) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey60") +
+  geom_boxplot(outlier.shape = NA, width = 0.5) +
+  geom_jitter(aes(color = run_block), width = 0.12, alpha = 0.8, size = 2) +
+  facet_wrap(~PR, nrow = 1) +
+  theme_bw(base_size = 12) +
+  labs(x = paste0("near_SGD = tidepool < ", sgd_cutoff_m, " m from SGD, T = rest of tidepool, C = cove, O = ocean"),
+       y = expression(paste(mu, "mol O"[2], " hr"^-1)), color = "Day") +
+  theme(strip.background = element_rect(fill = "white"), strip.text = element_text(face = "bold"))
+```
+
+## Slides 15-16: median rates table and lagoon vs outside test
+
+```{r}
+#| label: median-table
+rates_wide %>%
+  mutate(habitat = factor(habitat, levels = c("lagoon", "cove", "ocean"))) %>%
+  group_by(habitat) %>%
+  summarise(n = n(),
+            across(c(Respiration, NetPhoto, GrossPhoto),
+                   ~ sprintf("%.2f (%.2f to %.2f)", median(.x), quantile(.x, 0.25), quantile(.x, 0.75)))) %>%
+  kable(caption = "Median (interquartile range), umol O2/hr")
+
+tibble(rate = c("Respiration", "NetPhoto", "GrossPhoto")) %>%
+  mutate(p_value = map_dbl(rate, ~ wilcox.test(rates_wide[[.x]] ~ (rates_wide$habitat == "lagoon"))$p.value),
+         p_value = signif(p_value, 2)) %>%
+  kable(caption = "Lagoon vs outside (Wilcoxon rank-sum test)")
+```
+
+## Slide 16: rates by zone
+
+```{r}
+#| label: slide16-zone
+#| fig-height: 4
+#| fig-width: 10
+zone_box <- list(
+  geom_boxplot(aes(fill = zone), outlier.shape = NA, width = 0.6, alpha = 0.7),
+  geom_jitter(width = 0.12, alpha = 0.6, size = 1.3),
+  scale_fill_manual(values = zone_colors, guide = "none"),
+  scale_x_discrete(labels = zone_labels),
+  theme_bw(base_size = 12),
+  theme(panel.grid.minor = element_blank(),
+        strip.background = element_rect(fill = "white"), strip.text = element_text(face = "bold"))
+)
+
+rates_wide %>% count(zone) %>% kable(caption = "Kept samples per zone")
+
+rates_wide %>%
+  pivot_longer(c(Respiration, NetPhoto, GrossPhoto), names_to = "PR", values_to = "Values") %>%
+  rate_labels() %>%
+  ggplot(aes(x = zone, y = Values)) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey60") +
+  zone_box + facet_wrap(~PR, nrow = 1) +
+  coord_cartesian(ylim = c(-0.4, 0.8)) +          # a few extreme points are off the top/bottom
+  labs(x = NULL, y = expression(paste(mu, "mol O"[2], " hr"^-1)))
+```
+
+## Slide 17: oxygen, pH and salinity against each other
+
+```{r}
+#| label: slide17-field-chemistry
+#| fig-height: 4
+#| fig-width: 12
+pair_plot <- function(x, y, xlab, ylab) {
+  ggplot(field, aes(.data[[x]], .data[[y]], color = zone)) +
+    geom_point(size = 2, alpha = 0.8) +
+    scale_color_manual(values = zone_colors) +
+    theme_bw(base_size = 11) +
+    labs(x = xlab, y = ylab, color = "Zone")
+}
+wrap_plots(pair_plot("salinity", "pH", "Salinity", "pH"),
+           pair_plot("salinity", "DO_pct", "Salinity", "DO (% sat)"),
+           pair_plot("pH", "DO_pct", "pH", "DO (% sat)"),
+           nrow = 1, guides = "collect")
+
+# how strongly pH and oxygen follow salinity in the lagoon (Spearman rank correlation)
+lagoon_field <- field %>% filter(habitat == "lagoon")
+tibble(variable = c("pH", "DO_pct")) %>%
+  mutate(rho = map_dbl(variable, ~ cor(lagoon_field[[.x]], lagoon_field$salinity, method = "spearman", use = "complete.obs")),
+         p_value = map_dbl(variable, ~ cor.test(lagoon_field[[.x]], lagoon_field$salinity, method = "spearman", exact = FALSE)$p.value)) %>%
+  mutate(rho = round(rho, 2), p_value = format.pval(p_value, digits = 2, eps = 0.001)) %>%
+  kable(caption = "Lagoon: correlation with salinity")
+```
+
+## Slide 18: seep maps
+
+```{r}
+#| label: slide18-maps
+#| fig-height: 8
+#| fig-width: 10
+shapes <- read_csv(here("data", "gps", "mpw_map_shapes.csv"))   # pool, SGD zones and seeps from MPW_map.kmz
+
+map_one <- function(var, label) {
+  ggplot() +
+    geom_polygon(data = filter(shapes, type == "pool"), aes(lon, lat, group = name), fill = "grey95", color = "grey50") +
+    geom_polygon(data = filter(shapes, type == "sgd"),  aes(lon, lat, group = name), fill = NA, color = "black", linetype = "dashed") +
+    geom_point(data = filter(shapes, type == "seep"), aes(lon, lat), shape = 4, size = 3, stroke = 1.2) +
+    geom_point(data = field %>% filter(habitat == "lagoon", !is.na(.data[[var]])),
+               aes(lon, lat, color = .data[[var]]), size = 3, alpha = 0.9) +
+    scale_color_viridis_c(direction = -1, name = label) +   # low values = bright yellow
+    coord_quickmap() +
+    theme_void(base_size = 11) +
+    labs(title = label)
+}
+
+wrap_plots(map_one("salinity", "Salinity"), map_one("pH", "pH"),
+           map_one("DO_pct", "DO (% sat)"), map_one("temp_C", "Temp (deg C)"), ncol = 2)
+```
+
+## Slide 19: P:R ratio and starting oxygen by zone
+
+```{r}
+#| label: slide19-pr-and-oxygen
+#| fig-height: 4
+#| fig-width: 10
+# P:R = gross photosynthesis / respiration; above 1 = makes more O2 than it uses
+pr_data <- rates_wide %>% mutate(PR_ratio = GrossPhoto / Respiration)
+sum(pr_data$GrossPhoto <= 0)   # samples with gross P <= 0 can't go on a log scale, so they are left out
+
+p_ratio <- pr_data %>%
+  filter(GrossPhoto > 0) %>%
+  ggplot(aes(x = zone, y = PR_ratio)) +
+  geom_hline(yintercept = 1, linetype = "dashed", color = "grey40") +
+  zone_box + scale_y_log10() +
+  labs(x = NULL, y = "P:R (gross P / R, log scale)", title = "P:R ratio")
+
+# starting oxygen = DO % measured on each sample (Orion) before incubation, all 115 samples
+p_do <- field %>%
+  ggplot(aes(x = zone, y = DO_pct)) +
+  zone_box +
+  labs(x = NULL, y = "DO (% saturation)", title = "Starting oxygen")
+
+wrap_plots(p_ratio, p_do, nrow = 1)
+```
+
+
+```{r}
+#| label: slide19-gp-vs-r
+#| fig-height: 4
+#| fig-width: 11
+rates_wide %>%
+  ggplot(aes(x = Respiration, y = GrossPhoto, color = zone)) +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "grey40") +   # 1:1 line, P = R
+  geom_hline(yintercept = 0, color = "grey80") +
+  geom_point(size = 2.2, alpha = 0.8) +
+  facet_wrap(~zone, nrow = 1, labeller = as_labeller(zone_labels)) +
+  scale_color_manual(values = zone_colors, guide = "none") +
+  coord_cartesian(xlim = c(0, 0.6), ylim = c(-0.3, 0.8)) +   # zoom; one gross P point (~1.8) is off the top
+  theme_bw(base_size = 12) +
+  labs(x = expression(paste("Respiration (", mu, "mol O"[2], " hr"^-1, ")")),
+       y = expression(paste("Gross photosynthesis (", mu, "mol O"[2], " hr"^-1, ")"))) +
+  theme(strip.background = element_rect(fill = "white"), strip.text = element_text(face = "bold"),
+        panel.grid.minor = element_blank())
+
+# P:R summary per zone that doesn't blow up when respiration is near zero
+rates_wide %>%
+  group_by(zone) %>%
+  summarise(n = n(),
+            `P:R (median GP / median R)` = round(median(GrossPhoto) / median(Respiration), 2),
+            `% samples with P > R` = round(100 * mean(GrossPhoto > Respiration)),
+            `gross P <= 0` = sum(GrossPhoto <= 0)) %>%
+  mutate(zone = zone_labels[as.character(zone)]) %>%
+  kable(caption = "P:R by zone")
+```
+```
+
+copied from mpw_project_notebook
+
+### Groundwater fingerprint in the field data
+
+Uses the field readings from **all 115 samples** (no respirometry exclusions). Groundwater is fresher, and here it also comes with lower pH and lower oxygen.
+
+```{r}
+#| label: groundwater-fingerprint
+#| fig-height: 4
+#| fig-width: 9
+SampleMeta %>%
+  filter(sample_type == "sample", !is.na(salinity)) %>%
+  mutate(habitat = factor(habitat, levels = c("lagoon", "cove", "ocean"))) %>%
+  pivot_longer(c(pH, DO_pct), names_to = "variable", values_to = "value") %>%
+  mutate(variable = recode(variable, pH = "pH", DO_pct = "Dissolved oxygen (% sat)")) %>%
+  ggplot(aes(x = salinity, y = value, color = habitat)) +
+  geom_point(size = 2.2, alpha = 0.8) +
+  facet_wrap(~variable, scales = "free_y") +
+  scale_x_reverse() +                                   # fresher water on the right
+  scale_color_manual(values = c(lagoon = "#D55E00", cove = "#0072B2", ocean = "#009E73")) +
+  theme_bw(base_size = 12) +
+  labs(x = "Salinity (fresher water to the right)", y = NULL, color = "Habitat") +
+  theme(strip.background = element_rect(fill = "white"), strip.text = element_text(face = "bold"),
+        panel.grid.minor = element_blank())
+```
+
+### Wave dats v still
+
+Split by median lagoon salinity was below 34.5. If the lagoon responds on groundwater days but the outside water does not, that points toward groundwater rather than the pool itself.
+
+```{r}
+#| label: groundwater-days
+#| fig-height: 4
+#| fig-width: 10
+gw_days <- SampleMeta %>%
+  filter(habitat == "lagoon") %>%
+  group_by(day) %>%
+  summarise(lagoon_salinity = median(salinity, na.rm = TRUE)) %>%
+  filter(lagoon_salinity < 34.5) %>%
+  pull(day)
+gw_days   # which days counted as groundwater days
+
+rates_wide %>%
+  mutate(where = if_else(habitat == "lagoon", "Lagoon", "Outside (cove + ocean)"),
+         day_type = if_else(day %in% gw_days, "Fresher", "Saltier")) %>%
+  pivot_longer(c(Respiration, NetPhoto, GrossPhoto), names_to = "PR", values_to = "Values") %>%
+  mutate(PR = factor(PR, levels = c("Respiration", "NetPhoto", "GrossPhoto"),
+                     labels = c("Respiration", "Net photosynthesis", "Gross photosynthesis"))) %>%
+  ggplot(aes(x = where, y = Values, fill = day_type)) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey60") +
+  geom_boxplot(outlier.shape = NA, width = 0.6, position = position_dodge(0.7)) +
+  geom_point(position = position_jitterdodge(jitter.width = 0.12, dodge.width = 0.7), alpha = 0.6, size = 1.5) +
+  facet_wrap(~PR, nrow = 1) +
+  scale_fill_manual(values = c("Fresher" = "#E69F00", "Saltier" = "grey85")) +
+  coord_cartesian(ylim = c(-0.4, 0.8)) +                  # zoom in; a few extreme points are off the top/bottom
+  theme_bw(base_size = 12) +
+  labs(x = NULL, y = expression(paste(mu, "mol O"[2], " hr"^-1)), fill = NULL) +
+  theme(strip.background = element_rect(fill = "white"), strip.text = element_text(face = "bold"),
+        legend.position = "bottom", panel.grid.minor = element_blank())
+```
+
+### Why were some days fresher?
+
+Groundwater signal showed up on Days 1, 4 and 5 but not 2, 3 and 6, and it did not follow the tide. Field notes point to **waves**: small surf on fresh days, bigger surf on salty days. Wave overwash pushes seawater into the pool and flushes out the groundwater. *To test: Waimea Bay wave buoy and nearby rain gauge, ~Sept 28–Oct 6.*
+
+### By day
+Note that after exclusions D4-6 only have 3-5 samples on each side  
+```{r}
+#| label: rates-by-day
+#| fig-height: 4
+#| fig-width: 10
+# how many samples are left per day after exclusions (fewer = less reliable box)
+rates_wide %>%
+  count(day, where = if_else(habitat == "lagoon", "Lagoon", "Outside")) %>%
+  pivot_wider(names_from = where, values_from = n, values_fill = 0) %>%
+  kable(caption = "Samples per day after exclusions")
+
+rates_wide %>%
+  mutate(where = if_else(habitat == "lagoon", "Lagoon", "Outside (cove + ocean)"),
+         day = paste0("D", day)) %>%
+  pivot_longer(c(Respiration, NetPhoto, GrossPhoto), names_to = "PR", values_to = "Values") %>%
+  mutate(PR = factor(PR, levels = c("Respiration", "NetPhoto", "GrossPhoto"),
+                     labels = c("Respiration", "Net photosynthesis", "Gross photosynthesis"))) %>%
+  ggplot(aes(x = day, y = Values, fill = where)) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey60") +
+  geom_boxplot(outlier.shape = NA, width = 0.7, position = position_dodge(0.8)) +
+  geom_point(position = position_jitterdodge(jitter.width = 0.1, dodge.width = 0.8), alpha = 0.6, size = 1.3) +
+  facet_wrap(~PR, nrow = 1) +
+  scale_fill_manual(values = c("Lagoon" = "#D55E00", "Outside (cove + ocean)" = "grey80")) +
+  coord_cartesian(ylim = c(-0.4, 0.8)) +                  # zoom in; a few extreme points are off the top/bottom
+  theme_bw(base_size = 12) +
+  labs(x = "Day", y = expression(paste(mu, "mol O"[2], " hr"^-1)), fill = NULL) +
+  theme(strip.background = element_rect(fill = "white"), strip.text = element_text(face = "bold"),
+        legend.position = "bottom", panel.grid.minor = element_blank())
+```
+
+### By tide and time collected
+
+Tide height at the moment each sample was collected, estimated from the day's high and low tides in `data/mpw_tides.csv`. Tide changed by less than 0.2ft over sampling period so Day and Tide are effectively the same variable.
+
+```{r}
+#| label: tide-height
+# tide table: one row per high or low tide
+tides <- read_csv(here("data", "mpw_tides.csv")) %>%
+  mutate(when = as.POSIXct(paste(date, time), format = "%Y-%m-%d %H:%M:%S", tz = "UTC")) %>%
+  arrange(when)
+
+# estimate tide height at any time, between the high/low before it and the one after it
+tide_at <- function(t) {
+  t <- as.numeric(t); w <- as.numeric(tides$when); h <- tides$tide_height_ft
+  i <- findInterval(t, w)                       # which high/low came just before
+  f <- (t - w[i]) / (w[i + 1] - w[i])           # fraction of the way to the next one (0 to 1)
+  h[i] + (h[i + 1] - h[i]) * (1 - cos(pi * f)) / 2
+}
+
+rates_wide <- rates_wide %>%
+  mutate(collected = as.POSIXct(paste(date, time_collected), format = "%Y-%m-%d %H:%M:%S", tz = "UTC"),
+         tide_height = tide_at(collected))
+
+# tide range sampled each day
+rates_wide %>%
+  group_by(day) %>%
+  summarise(first_sample = format(min(collected, na.rm = TRUE), "%H:%M"),
+            last_sample  = format(max(collected, na.rm = TRUE), "%H:%M"),
+            tide_low_ft  = round(min(tide_height, na.rm = TRUE), 2),
+            tide_high_ft = round(max(tide_height, na.rm = TRUE), 2)) %>%
+  kable(caption = "Tide height (ft) while sampling each day")
+```
+
+```{r}
+#| label: rates-by-tide
+#| fig-height: 4
+#| fig-width: 10
+rates_wide %>%
+  mutate(habitat = factor(habitat, levels = c("lagoon", "cove", "ocean"))) %>%
+  pivot_longer(c(Respiration, NetPhoto, GrossPhoto), names_to = "PR", values_to = "Values") %>%
+  mutate(PR = factor(PR, levels = c("Respiration", "NetPhoto", "GrossPhoto"),
+                     labels = c("Respiration", "Net photosynthesis", "Gross photosynthesis"))) %>%
+  ggplot(aes(x = tide_height, y = Values, color = habitat)) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey60") +
+  geom_point(size = 2, alpha = 0.8) +
+  facet_wrap(~PR, nrow = 1) +
+  scale_color_manual(values = c(lagoon = "#D55E00", cove = "#0072B2", ocean = "#009E73")) +
+  scale_x_continuous(breaks = c(0.5, 1, 1.5)) +
+  coord_cartesian(ylim = c(-0.4, 0.8)) +                  # zoom in; a few extreme points are off the top/bottom
+  theme_bw(base_size = 12) +
+  labs(x = "Tide height when collected (ft)", y = expression(paste(mu, "mol O"[2], " hr"^-1)), color = "Habitat") +
+  theme(strip.background = element_rect(fill = "white"), strip.text = element_text(face = "bold"),
+        panel.grid.minor = element_blank())
+```

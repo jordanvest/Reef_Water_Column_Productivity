@@ -90,7 +90,54 @@ tribble(
 ) %>% kable(caption = "Status of each dataset (edit as things change)")
 ```
 
-**Timeline:** *(paste Notion Gantt screenshot here, e.g. `![](gantt.png)`)*
+**Timeline:** 
+
+```{r}
+#| label: timeline
+#| fig-height: 4.5
+#| fig-width: 10
+# ---- edit dates here as plans change ----
+# status: "Planned" = date known, "Estimate" = my best guess, "Waiting" = depends on something outside my control
+plan <- tribble(
+  ~task,                               ~start,        ~end,          ~status,
+  "Nutrients: send to SLAB",           "2026-10-26",  "2026-10-30",  "Estimate",
+  "Nutrients: SLAB processing",        "2026-10-30",  "2027-01-29",  "Estimate",   # ~3 months
+  "fDOM: send to Nelson",              "2026-10-26",  "2026-10-30",  "Estimate",
+  "fDOM: lab processing",              "2026-10-30",  "2027-01-29",  "Estimate",   # ~3 months
+  "Chl-a: Turner fluorometer training","2026-10-26",  "2026-11-06",  "Estimate",
+  "Chl-a: run samples",                "2026-11-09",  "2026-11-11",  "Estimate",   # 2-3 days after training
+  "FCM: training",                     "2026-11-02",  "2026-11-20",  "Estimate",
+  "FCM: run samples",                  "2026-11-23",  "2026-12-18",  "Estimate",   # time unknown - update after training
+  "Plan&Permits Ch.2",                 "2026-11-23",  "2026-12-20",  "Estimate", 
+  "TA: run samples",                   "2027-01-11",  "2027-01-29",  "Waiting",    # when titrant arrives
+  "Analysis: combine all data",        "2027-02-01",  "2027-02-26",  "Estimate",
+  "BUOYS PREP",                        "2027-02-22",  "2027-03-10",  "Estimate"
+) %>%
+  mutate(across(c(start, end), as.Date),
+         task = factor(task, levels = rev(task)))   # keep the order above, top to bottom
+
+milestones <- tribble(
+  ~event,                    ~date,
+  "Committee meeting",       "2026-11-12",
+  "BUOYS", "2027-03-11"
+) %>% mutate(date = as.Date(date))
+
+ggplot(plan) +
+  geom_vline(data = milestones, aes(xintercept = date), linetype = "dashed", color = "grey40") +
+  geom_text(data = milestones, aes(x = date, y = Inf, label = event),
+            vjust = -0.4, size = 3.3, fontface = "bold") +
+  geom_segment(aes(x = start, xend = end, y = task, yend = task, color = status), linewidth = 5) +
+  geom_vline(xintercept = Sys.Date(), color = "#D55E00", linewidth = 0.6) +   # today
+  scale_color_manual(values = c(Planned = "#0072B2", Estimate = "#9ECAE1", Waiting = "grey70"),
+                     breaks = c("Planned", "Estimate", "Waiting")) +
+  scale_x_date(date_breaks = "1 month", date_labels = "%b %Y",
+               limits = as.Date(c("2026-10-19", "2027-03-31"))) +
+  coord_cartesian(clip = "off") +
+  theme_bw(base_size = 11) +
+  labs(x = NULL, y = NULL, color = NULL) +
+  theme(legend.position = "bottom", panel.grid.minor = element_blank(),
+        plot.margin = margin(t = 20, r = 10, b = 5, l = 5))
+```
 
 ## 4. Respirometry processing
 
@@ -268,162 +315,54 @@ rates_wide %>%
         panel.grid.minor = element_blank())
 ```
 
-### Groundwater fingerprint in the field data
-
-Uses the field readings from **all 115 samples** (no respirometry exclusions). Groundwater is fresher, and here it also comes with lower pH and lower oxygen.
+### Rates vs salinity, pH and DO (all kept samples)
 
 ```{r}
-#| label: groundwater-fingerprint
-#| fig-height: 4
-#| fig-width: 9
-SampleMeta %>%
-  filter(sample_type == "sample", !is.na(salinity)) %>%
-  mutate(habitat = factor(habitat, levels = c("lagoon", "cove", "ocean"))) %>%
-  pivot_longer(c(pH, DO_pct), names_to = "variable", values_to = "value") %>%
-  mutate(variable = recode(variable, pH = "pH", DO_pct = "Dissolved oxygen (% sat)")) %>%
-  ggplot(aes(x = salinity, y = value, color = habitat)) +
-  geom_point(size = 2.2, alpha = 0.8) +
-  facet_wrap(~variable, scales = "free_y") +
-  scale_x_reverse() +                                   # fresher water on the right
-  scale_color_manual(values = c(lagoon = "#D55E00", cove = "#0072B2", ocean = "#009E73")) +
-  theme_bw(base_size = 12) +
-  labs(x = "Salinity (fresher water to the right)", y = NULL, color = "Habitat") +
-  theme(strip.background = element_rect(fill = "white"), strip.text = element_text(face = "bold"),
-        panel.grid.minor = element_blank())
-```
+#| label: rate-scatters
+#| fig-height: 3.5
+#| fig-width: 11
+library(patchwork)
 
-### Wave dats v still
+habitat_colors <- c(lagoon = "#D55E00", cove = "#0072B2", ocean = "#009E73")   # same colours as earlier plots
 
-Split by median lagoon salinity was below 34.5. If the lagoon responds on groundwater days but the outside water does not, that points toward groundwater rather than the pool itself.
-
-```{r}
-#| label: groundwater-days
-#| fig-height: 4
-#| fig-width: 10
-gw_days <- SampleMeta %>%
-  filter(habitat == "lagoon") %>%
-  group_by(day) %>%
-  summarise(lagoon_salinity = median(salinity, na.rm = TRUE)) %>%
-  filter(lagoon_salinity < 34.5) %>%
-  pull(day)
-gw_days   # which days counted as groundwater days
-
-rates_wide %>%
-  mutate(where = if_else(habitat == "lagoon", "Lagoon", "Outside (cove + ocean)"),
-         day_type = if_else(day %in% gw_days, "Fresher", "Saltier")) %>%
-  pivot_longer(c(Respiration, NetPhoto, GrossPhoto), names_to = "PR", values_to = "Values") %>%
-  mutate(PR = factor(PR, levels = c("Respiration", "NetPhoto", "GrossPhoto"),
-                     labels = c("Respiration", "Net photosynthesis", "Gross photosynthesis"))) %>%
-  ggplot(aes(x = where, y = Values, fill = day_type)) +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "grey60") +
-  geom_boxplot(outlier.shape = NA, width = 0.6, position = position_dodge(0.7)) +
-  geom_point(position = position_jitterdodge(jitter.width = 0.12, dodge.width = 0.7), alpha = 0.6, size = 1.5) +
-  facet_wrap(~PR, nrow = 1) +
-  scale_fill_manual(values = c("Fresher" = "#E69F00", "Saltier" = "grey85")) +
-  coord_cartesian(ylim = c(-0.4, 0.8)) +                  # zoom in; a few extreme points are off the top/bottom
-  theme_bw(base_size = 12) +
-  labs(x = NULL, y = expression(paste(mu, "mol O"[2], " hr"^-1)), fill = NULL) +
-  theme(strip.background = element_rect(fill = "white"), strip.text = element_text(face = "bold"),
-        legend.position = "bottom", panel.grid.minor = element_blank())
-```
-
-### Why were some days fresher?
-
-Groundwater signal showed up on Days 1, 4 and 5 but not 2, 3 and 6, and it did not follow the tide. Field notes point to **waves**: small surf on fresh days, bigger surf on salty days. Wave overwash pushes seawater into the pool and flushes out the groundwater. *To test: Waimea Bay wave buoy and nearby rain gauge, ~Sept 28–Oct 6.*
-
-### By day
-Note that after exclusions D4-6 only have 3-5 samples on each side  
-```{r}
-#| label: rates-by-day
-#| fig-height: 4
-#| fig-width: 10
-# how many samples are left per day after exclusions (fewer = less reliable box)
-rates_wide %>%
-  count(day, where = if_else(habitat == "lagoon", "Lagoon", "Outside")) %>%
-  pivot_wider(names_from = where, values_from = n, values_fill = 0) %>%
-  kable(caption = "Samples per day after exclusions")
-
-rates_wide %>%
-  mutate(where = if_else(habitat == "lagoon", "Lagoon", "Outside (cove + ocean)"),
-         day = paste0("D", day)) %>%
-  pivot_longer(c(Respiration, NetPhoto, GrossPhoto), names_to = "PR", values_to = "Values") %>%
-  mutate(PR = factor(PR, levels = c("Respiration", "NetPhoto", "GrossPhoto"),
-                     labels = c("Respiration", "Net photosynthesis", "Gross photosynthesis"))) %>%
-  ggplot(aes(x = day, y = Values, fill = where)) +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "grey60") +
-  geom_boxplot(outlier.shape = NA, width = 0.7, position = position_dodge(0.8)) +
-  geom_point(position = position_jitterdodge(jitter.width = 0.1, dodge.width = 0.8), alpha = 0.6, size = 1.3) +
-  facet_wrap(~PR, nrow = 1) +
-  scale_fill_manual(values = c("Lagoon" = "#D55E00", "Outside (cove + ocean)" = "grey80")) +
-  coord_cartesian(ylim = c(-0.4, 0.8)) +                  # zoom in; a few extreme points are off the top/bottom
-  theme_bw(base_size = 12) +
-  labs(x = "Day", y = expression(paste(mu, "mol O"[2], " hr"^-1)), fill = NULL) +
-  theme(strip.background = element_rect(fill = "white"), strip.text = element_text(face = "bold"),
-        legend.position = "bottom", panel.grid.minor = element_blank())
-```
-
-### By tide and time collected
-
-Tide height at the moment each sample was collected, estimated from the day's high and low tides in `data/mpw_tides.csv`. Tide changed by less than 0.2ft over sampling period so Day and Tide are effectively the same variable.
-
-```{r}
-#| label: tide-height
-# tide table: one row per high or low tide
-tides <- read_csv(here("data", "mpw_tides.csv")) %>%
-  mutate(when = as.POSIXct(paste(date, time), format = "%Y-%m-%d %H:%M:%S", tz = "UTC")) %>%
-  arrange(when)
-
-# estimate tide height at any time, between the high/low before it and the one after it
-tide_at <- function(t) {
-  t <- as.numeric(t); w <- as.numeric(tides$when); h <- tides$tide_height_ft
-  i <- findInterval(t, w)                       # which high/low came just before
-  f <- (t - w[i]) / (w[i + 1] - w[i])           # fraction of the way to the next one (0 to 1)
-  h[i] + (h[i + 1] - h[i]) * (1 - cos(pi * f)) / 2
+# one scatter plot: x = field measurement, y = rate, colour = habitat
+scatter_one <- function(x, xlab, y, ylab) {
+  rates_wide %>%
+    mutate(habitat = factor(habitat, levels = c("lagoon", "cove", "ocean"))) %>%
+    ggplot(aes(x = .data[[x]], y = .data[[y]], color = habitat)) +
+    geom_hline(yintercept = 0, linetype = "dashed", color = "grey60") +
+    geom_point(size = 2, alpha = 0.8) +
+    scale_color_manual(values = habitat_colors) +
+    theme_bw(base_size = 12) +
+    labs(x = xlab, y = ylab, color = "Habitat")
 }
 
-rates_wide <- rates_wide %>%
-  mutate(collected = as.POSIXct(paste(date, time_collected), format = "%Y-%m-%d %H:%M:%S", tz = "UTC"),
-         tide_height = tide_at(collected))
+r_lab  <- expression(paste("Respiration (", mu, "mol O"[2], " hr"^-1, ")"))
+np_lab <- expression(paste("Net photosynthesis (", mu, "mol O"[2], " hr"^-1, ")"))
+gp_lab <- expression(paste("Gross photosynthesis (", mu, "mol O"[2], " hr"^-1, ")"))
 
-# tide range sampled each day
-rates_wide %>%
-  group_by(day) %>%
-  summarise(first_sample = format(min(collected, na.rm = TRUE), "%H:%M"),
-            last_sample  = format(max(collected, na.rm = TRUE), "%H:%M"),
-            tide_low_ft  = round(min(tide_height, na.rm = TRUE), 2),
-            tide_high_ft = round(max(tide_height, na.rm = TRUE), 2)) %>%
-  kable(caption = "Tide height (ft) while sampling each day")
-```
+# Respiration
+scatter_one("salinity", "Salinity", "Respiration", r_lab) +
+  scatter_one("pH", "pH", "Respiration", r_lab) +
+  scatter_one("DO_pct", "DO (% sat)", "Respiration", r_lab) +
+  plot_layout(guides = "collect")      # one shared legend
 
-```{r}
-#| label: rates-by-tide
-#| fig-height: 4
-#| fig-width: 10
-rates_wide %>%
-  mutate(habitat = factor(habitat, levels = c("lagoon", "cove", "ocean"))) %>%
-  pivot_longer(c(Respiration, NetPhoto, GrossPhoto), names_to = "PR", values_to = "Values") %>%
-  mutate(PR = factor(PR, levels = c("Respiration", "NetPhoto", "GrossPhoto"),
-                     labels = c("Respiration", "Net photosynthesis", "Gross photosynthesis"))) %>%
-  ggplot(aes(x = tide_height, y = Values, color = habitat)) +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "grey60") +
-  geom_point(size = 2, alpha = 0.8) +
-  facet_wrap(~PR, nrow = 1) +
-  scale_color_manual(values = c(lagoon = "#D55E00", cove = "#0072B2", ocean = "#009E73")) +
-  scale_x_continuous(breaks = c(0.5, 1, 1.5)) +
-  coord_cartesian(ylim = c(-0.4, 0.8)) +                  # zoom in; a few extreme points are off the top/bottom
-  theme_bw(base_size = 12) +
-  labs(x = "Tide height when collected (ft)", y = expression(paste(mu, "mol O"[2], " hr"^-1)), color = "Habitat") +
-  theme(strip.background = element_rect(fill = "white"), strip.text = element_text(face = "bold"),
-        panel.grid.minor = element_blank())
+# Net photosynthesis
+scatter_one("salinity", "Salinity", "NetPhoto", np_lab) +
+  scatter_one("pH", "pH", "NetPhoto", np_lab) +
+  scatter_one("DO_pct", "DO (% sat)", "NetPhoto", np_lab) +
+  plot_layout(guides = "collect")
+
+# Gross photosynthesis
+scatter_one("salinity", "Salinity", "GrossPhoto", gp_lab) +
+  scatter_one("pH", "pH", "GrossPhoto", gp_lab) +
+  scatter_one("DO_pct", "DO (% sat)", "GrossPhoto", gp_lab) +
+  plot_layout(guides = "collect")
 ```
 
 ## 7. Questions
 
 1. **Oxy-10 drift:** 71% of Oxy-10 sample runs (34 of 48) show O₂ rising in the dark, and so do all the blanks. Known issue with this unit? Correct with the blanks, or treat as lost and fix the instrument before the next run?
-2. **Subsamples:** nutrients and chl-a first, fDOM through the collaborator, FCM and TA as a subset? What can the lab afford?
-3. **Negative net photosynthesis:** keep unless the trace shows an artifact? The pilot suggests it may be real.
-4. **Blank correction and units:** subtract the blank per day? Report per litre and, once chl-a is done, per chl-a?
-5. **Consistent processing:** rerun all days at every 20th row?
 
 
 ## Change log
@@ -433,3 +372,4 @@ rates_wide %>%
 - 2026-10-18: Adapted the respo script for MPW; run one day at a time. D1 run.
 - 2026-10-20: D1–D4, D6 run. D5 hung (very long light phase): added `acclim_sec` and `thin_n` settings; D5 run with 0 and 20.
 - 2026-10-21: D3 and D6 rerun at every 20th row (session closed before saving). Found that most dark-phase failures are on the Oxy-10. Added `exclude` column to `mpw_respo_meta.csv` (52 "R up" + BLK1 probe failure). Split the script into `respo_LoLinR.R` and `respo_rates_plots.R`. Filled real GPS coordinates for 16 samples. Recomputed distance to SGD for all samples (nearest SGD polygon or seep point, from `MPW_map.kmz`); every habitat now matches its zone on the map. Added tides file.
+- 2026-10-27: Made pH, salinity, DO plots. Moved exploratory plots to lab_meeting_code
